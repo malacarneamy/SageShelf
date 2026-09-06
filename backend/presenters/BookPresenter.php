@@ -33,7 +33,7 @@ class BookPresenter {
             }
         }
 
-        // Le prime 3 fonti vengono interrogate IN PARALLELO 
+        // Le prime 3 fonti vengono interrogate IN PARALLELO
         $requests = [];
         foreach ($candidates as $c) {
             $requests["googlebooks:{$c}"]        = "https://www.googleapis.com/books/v1/volumes?q=isbn:{$c}";
@@ -42,7 +42,7 @@ class BookPresenter {
         }
         $responses = httpGetMulti($requests);
 
-        // Ordine di priorità delle FONTI 
+        // Ordine di priorità delle FONTI
         $parsers = [
             'googlebooks'        => fn(string $json, string $c) => $this->_parseGoogleBooks($json),
             'openlibrary'        => fn(string $json, string $c) => $this->_parseOpenLibrary($json, $c),
@@ -412,8 +412,8 @@ class BookPresenter {
         return ['updated' => true];
     }
 
-    public function removeBook(int $userId, int $bookId): array {
-        if (!$this->bookModel->removeFromCollection($userId, $bookId)) {
+    public function removeBook(int $userId, int $userBookId): array {
+        if (!$this->bookModel->removeFromCollection($userId, $userBookId)) {
             respondError('Libro non trovato', 404);
         }
         return ['removed' => true];
@@ -435,16 +435,27 @@ class BookPresenter {
     }
 
     // ── Recensioni ────────────────────────────────────────────
+    public function upsertReview(int $userId, int $userBookId, array $body): array {
+        if (!$this->_ownsUserBook($userBookId, $userId)) {
+            respondError('Libro non trovato', 404);
+        }
+        $bookId = $this->bookModel->getBookIdFromUserBook($userBookId);
+        if (!$bookId) respondError('Libro non trovato', 404);
 
-    public function upsertReview(int $userId, int $bookId, array $body): array {
         $rating = (int)($body['rating']      ?? 0);
         $text   = trim($body['review_text']  ?? '');
         if ($rating < 1 || $rating > 5) respondError('Rating tra 1 e 5');
         return ['review' => $this->reviewModel->upsert($userId, $bookId, $rating, $text)];
     }
 
-    public function deleteReview(int $userId, int $bookId): array {
-        $this->reviewModel->delete($userId, $bookId);
+    public function deleteReview(int $userId, int $userBookId): array {
+        if (!$this->_ownsUserBook($userBookId, $userId)) {
+            respondError('Libro non trovato', 404);
+        }
+        $bookId = $this->bookModel->getBookIdFromUserBook($userBookId);
+        if ($bookId) {
+            $this->reviewModel->delete($userId, $bookId);
+        }
         return ['deleted' => true];
     }
 
