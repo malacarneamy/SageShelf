@@ -98,16 +98,56 @@ function requireAuth(): int {
 }
 
 // ── HTTP helper (cURL) ───────────────────────────────────────
-function httpGet(string $url): ?string {
+function httpGet(string $url, int $timeoutSeconds = 8): ?string {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_USERAGENT, 'SageShelf/1.0');
     $result = curl_exec($ch);
     curl_close($ch);
     return $result ?: null;
+}
+
+/**
+ * Esegue più richieste GET in parallelo 
+ *
+ * @param array<string,string> $urls  Mappa chiave => URL da interrogare.
+ * @return array<string,?string>      Stessa mappa di chiavi, con il body
+ *                                    della risposta (o null se fallita/vuota).
+ */
+function httpGetMulti(array $urls, int $timeoutSeconds = 6): array {
+    $mh      = curl_multi_init();
+    $handles = [];
+
+    foreach ($urls as $key => $url) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'SageShelf/1.0');
+        curl_multi_add_handle($mh, $ch);
+        $handles[$key] = $ch;
+    }
+
+    $running = null;
+    do {
+        curl_multi_exec($mh, $running);
+        if ($running > 0) curl_multi_select($mh);
+    } while ($running > 0);
+
+    $results = [];
+    foreach ($handles as $key => $ch) {
+        $body = curl_multi_getcontent($ch);
+        $results[$key] = $body !== '' ? $body : null;
+        curl_multi_remove_handle($mh, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($mh);
+
+    return $results;
 }
 
 // ── Email helper (per invio codici OTP, via Resend API) ───────
