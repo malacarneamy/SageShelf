@@ -24,7 +24,7 @@ Applicazione web per gestire la propria collezione di libri, strutturata secondo
 bookshelf/
 ├── .gitignore
 ├── backend/
-│   ├── .env                        
+│   ├── .env                        # Segreti locali (NON committato)
 │   ├── config/
 │   │   ├── bootstrap.php           # Autoload, sessione, CORS, helpers HTTP, invio email
 │   │   ├── Database.php            # Singleton PDO (config da variabili d'ambiente)
@@ -40,7 +40,6 @@ bookshelf/
 │   │   ├── AuthPresenter.php       # Richiesta/verifica codice OTP, sessione
 │   │   ├── BookDetailPresenter.php
 │   │   ├── BookPresenter.php
-│   │   ├── CategoryPresenter.php
 │   │   └── ShelfPresenter.php
 │   ├── views/
 │   │   └── api.php                 # ← VIEW: dispatcher HTTP (thin layer)
@@ -132,7 +131,7 @@ MAIL_FROM=onboarding@resend.dev
 MAIL_FROM_NAME=SageShelf
 MAIL_API_KEY=
 ```
-`backend/.env`
+`backend/.env` **non va mai committato** su git — contiene i segreti reali (password DB, API key). Solo `.env.example` (senza valori) va versionato.
 
 > In fase di sviluppo si può usare il dominio di test `onboarding@resend.dev` come `MAIL_FROM`, che funziona subito ma invia solo all'email con cui ti sei registrato su Resend. Per un uso reale con più utenti serve verificare un dominio proprio su Resend.
 
@@ -176,7 +175,7 @@ La sessione, una volta autenticato, dura 30 giorni e si rinnova automaticamente 
 | Feature                      | Dettaglio                                                                  |
 |------------------------------|----------------------------------------------------------------------------|
 | **Autenticazione**           | Login/registrazione passwordless con codice OTP inviato via email          |
-| **Profilo utente**           | Modifica username, email, avatar; eliminazione account                     |
+| **Profilo utente**           | Modifica username, avatar; eliminazione account                            |
 | **Libreria**                 | Visualizza tutti i libri con stato di lettura                              |
 | **Lista desideri**           | Sezione separata per i libri con `is_wishlist = true`                      |
 | **Scaffali dinamici**        | Creati dall'utente, navigabili con frecce laterali sticky                  |
@@ -296,7 +295,6 @@ ALTER TABLE users DROP COLUMN security_answer;
 | POST   | /auth/logout         | Logout                                          |
 | GET    | /auth/me             | Utente corrente                                 |
 | PUT    | /auth/username       | Aggiorna username                               |
-| PUT    | /auth/email          | Aggiorna email                                  |
 | POST   | /auth/avatar         | Carica immagine profilo                         |
 | DELETE | /auth/avatar         | Rimuovi immagine profilo                        |
 | POST   | /auth/account/delete | Elimina account                                 |
