@@ -1,0 +1,20 @@
+# Segreti / configurazione locale
+backend/.env
+.env
+*.env
+!.env.example
+
+# Upload utente (avatar, cover custom)
+frontend/assets/avatars/*
+!frontend/assets/avatars/.gitkeep
+frontend/assets/covers/*
+!frontend/assets/covers/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Log
+*.log
