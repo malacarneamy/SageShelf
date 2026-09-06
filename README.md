@@ -11,6 +11,7 @@ Applicazione web per gestire la propria collezione di libri, strutturata secondo
 | Frontend  | HTML5, CSS3 (custom), JavaScript ES2022 (no framework)            |
 | Backend   | PHP 8.1+                                                          |
 | Database  | MySQL 8+ (o MariaDB 10.6+)                                        |
+| Auth      | Passwordless via codice OTP inviato per email (Resend API)        |
 | Scanner   | Tesseract.js (OCR ISBN via webcam)                                |
 | Book API  | Google Books → Open Library (lookup ISBN, cascata automatica)     |
 | Markdown  | marked.js + DOMPurify (recensioni e note personali)               |
@@ -21,19 +22,22 @@ Applicazione web per gestire la propria collezione di libri, strutturata secondo
 
 ```
 bookshelf/
+├── .gitignore
 ├── backend/
+│   ├── .env                        
 │   ├── config/
-│   │   ├── bootstrap.php           # Autoload, sessione, helpers HTTP
-│   │   ├── Database.php            # Singleton PDO
+│   │   ├── bootstrap.php           # Autoload, sessione, CORS, helpers HTTP, invio email
+│   │   ├── Database.php            # Singleton PDO (config da variabili d'ambiente)
 │   │   └── schema.sql              # Schema DB completo (installazione fresh)
 │   ├── models/                     # ← MODEL: accesso dati puro
 │   │   ├── BookDetailModel.php
 │   │   ├── BookModel.php
+│   │   ├── LoginCodeModel.php      # Codici OTP (creazione, verifica, rate limiting)
 │   │   ├── ReviewModel.php
 │   │   ├── ShelfModel.php
 │   │   └── UserModel.php
 │   ├── presenters/                 # ← PRESENTER: logica di business
-│   │   ├── AuthPresenter.php
+│   │   ├── AuthPresenter.php       # Richiesta/verifica codice OTP, sessione
 │   │   ├── BookDetailPresenter.php
 │   │   ├── BookPresenter.php
 │   │   ├── CategoryPresenter.php
@@ -102,6 +106,7 @@ bookshelf/
 - PHP 8.1+
 - MySQL 8+ o MariaDB 10.6+
 - Apache con `mod_rewrite` abilitato (XAMPP consigliato per sviluppo locale)
+- Un account [Resend](https://resend.com) (gratuito) per l'invio dei codici OTP via email
 
 ### 2. Database
 Apri `http://localhost/phpmyadmin`, crea il database `bookshelf_db` e importa lo schema:
@@ -109,16 +114,27 @@ Apri `http://localhost/phpmyadmin`, crea il database `bookshelf_db` e importa lo
 -- Esegui il contenuto di backend/config/schema.sql
 ```
 
-### 3. Configurazione DB
-Modifica `backend/config/Database.php`:
-```php
-private static array $config = [
-    'host'   => 'localhost',
-    'dbname' => 'bookshelf_db',
-    'user'   => 'root',
-    'pass'   => '',   // vuota in XAMPP
-];
+### 3. Configurazione (variabili d'ambiente)
+Copia `backend/.env.example` in `backend/.env` e compila i valori:
+```bash
+DB_HOST=localhost
+DB_NAME=bookshelf_db
+DB_USER=root
+DB_PASS=
+
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+CORS_ALLOWED_ORIGINS=https://sageshelf.great-site.net
+
+MAIL_FROM=onboarding@resend.dev
+MAIL_FROM_NAME=SageShelf
+MAIL_API_KEY=
 ```
+`backend/.env`
+
+> In fase di sviluppo si può usare il dominio di test `onboarding@resend.dev` come `MAIL_FROM`, che funziona subito ma invia solo all'email con cui ti sei registrato su Resend. Per un uso reale con più utenti serve verificare un dominio proprio su Resend.
 
 ### 4. Deploy locale (XAMPP)
 Copia l'intera cartella `bookshelf/` in `htdocs/`:
@@ -127,11 +143,31 @@ C:\xampp\htdocs\bookshelf\
 ```
 Il sito sarà raggiungibile a `http://localhost/bookshelf/frontend/`
 
+> Nota: in locale su `http://` (senza HTTPS), il cookie di sessione impostato con `'secure' => true` in `bootstrap.php` non viene inviato dal browser. Per testare in locale senza HTTPS, imposta temporaneamente `'secure' => false` in `backend/config/bootstrap.php`; ricordati di rimetterlo a `true` prima del deploy in produzione.
+
 ### 5. HTTPS (produzione)
-Nel file `backend/config/bootstrap.php` imposta:
+Assicurati che `backend/config/bootstrap.php` abbia:
 ```php
 'secure' => true,
 ```
+
+---
+
+## Autenticazione
+
+SageShelf usa un login **passwordless**: nessuna password da ricordare o da violare.
+
+1. L'utente inserisce la propria email (login) o email + username (registrazione)
+2. Il backend genera un codice a 6 cifre, lo salva hashato in `login_codes` con scadenza a 10 minuti, e lo invia via email tramite Resend
+3. L'utente inserisce il codice ricevuto
+4. Se corretto e non scaduto, viene creata la sessione (e, se è la prima volta, l'utente viene registrato)
+
+Limiti applicati lato server (in `LoginCodeModel`):
+- un nuovo codice non può essere richiesto più di una volta ogni 60 secondi per la stessa email
+- un codice scade dopo 10 minuti
+- dopo 5 tentativi falliti di verifica, il codice viene invalidato e va richiesto uno nuovo
+
+La sessione, una volta autenticato, dura 30 giorni e si rinnova automaticamente ad ogni richiesta autenticata (vedi `SESSION_LIFETIME` in `bootstrap.php`).
 
 ---
 
@@ -139,8 +175,8 @@ Nel file `backend/config/bootstrap.php` imposta:
 
 | Feature                      | Dettaglio                                                                  |
 |------------------------------|----------------------------------------------------------------------------|
-| **Autenticazione**           | Registrazione (con doppia conferma password) / Login con sessioni + bcrypt |
-| **Profilo utente**           | Modifica username, email, password, avatar; eliminazione account           |
+| **Autenticazione**           | Login/registrazione passwordless con codice OTP inviato via email          |
+| **Profilo utente**           | Modifica username, email, avatar; eliminazione account                     |
 | **Libreria**                 | Visualizza tutti i libri con stato di lettura                              |
 | **Lista desideri**           | Sezione separata per i libri con `is_wishlist = true`                      |
 | **Scaffali dinamici**        | Creati dall'utente, navigabili con frecce laterali sticky                  |
@@ -218,7 +254,8 @@ BaseView  (_esc, _formatLabel, _durationText, toast, modal)
 ### Schema principale (`schema.sql`)
 | Tabella        | Descrizione                                                                   |
 |----------------|-------------------------------------------------------------------------------|
-| `users`        | Utenti registrati (username, email, password, avatar_url)                     |
+| `users`        | Utenti registrati (username, email, avatar_url — nessuna password)             |
+| `login_codes`  | Codici OTP per il login: hash del codice, scadenza, tentativi, stato d'uso     |
 | `shelves`      | Scaffali dinamici per utente (con posizione)                                  |
 | `books`        | Catalogo globale dei libri (deduplicato per ISBN)                             |
 | `user_books`   | Collezione personale — collega utente, libro, scaffale, stato e `is_wishlist` |
@@ -238,6 +275,12 @@ ALTER TABLE book_details ADD COLUMN personal_notes TEXT DEFAULT NULL;
 
 -- Aggiunge avatar utente
 ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NULL;
+
+-- Passaggio a login passwordless (v5 → v6): rimuove password/security_answer,
+-- aggiunge la tabella login_codes per i codici OTP
+ALTER TABLE users DROP COLUMN password;
+ALTER TABLE users DROP COLUMN security_answer;
+-- Esegui poi la CREATE TABLE login_codes presente in schema.sql
 ```
 
 ---
@@ -245,18 +288,18 @@ ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500) NULL;
 ## API Endpoints
 
 ### Auth
-| Metodo | Path                 | Descrizione                  |
-|--------|----------------------|------------------------------|
-| POST   | /auth/register       | Registrazione                |
-| POST   | /auth/login          | Login                        |
-| POST   | /auth/logout         | Logout                       |
-| GET    | /auth/me             | Utente corrente              |
-| PUT    | /auth/username       | Aggiorna username            |
-| PUT    | /auth/email          | Aggiorna email               |
-| PUT    | /auth/password       | Aggiorna password            |
-| POST   | /auth/avatar         | Carica immagine profilo      |
-| DELETE | /auth/avatar         | Rimuovi immagine profilo     |
-| POST   | /auth/account/delete | Elimina account              |
+| Metodo | Path                 | Descrizione                                    |
+|--------|----------------------|-------------------------------------------------|
+| POST   | /auth/register/code  | Richiede il codice OTP per una nuova registrazione (email + username) |
+| POST   | /auth/login/code     | Richiede il codice OTP per il login (email)     |
+| POST   | /auth/verify         | Verifica il codice OTP e crea la sessione (registra l'utente se non esiste ancora) |
+| POST   | /auth/logout         | Logout                                          |
+| GET    | /auth/me             | Utente corrente                                 |
+| PUT    | /auth/username       | Aggiorna username                               |
+| PUT    | /auth/email          | Aggiorna email                                  |
+| POST   | /auth/avatar         | Carica immagine profilo                         |
+| DELETE | /auth/avatar         | Rimuovi immagine profilo                        |
+| POST   | /auth/account/delete | Elimina account                                 |
 
 ### Libri
 | Metodo | Path                    | Descrizione                           |
