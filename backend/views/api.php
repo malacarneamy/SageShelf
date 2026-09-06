@@ -8,10 +8,9 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../config/bootstrap.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
-$uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$base = preg_replace('#/views/api\.php$#', '', $_SERVER['SCRIPT_NAME']);
-$path = str_starts_with($uri, $base) ? substr($uri, strlen($base)) : $uri;
-$path = '/' . ltrim($path, '/');
+$uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$script = $_SERVER['SCRIPT_NAME'];
+$path = '/' . ltrim(substr($uri, strlen($script)), '/');
 
 $parts    = explode('/', trim($path, '/'));
 $resource = $parts[0] ?? '';
