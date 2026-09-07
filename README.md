@@ -54,6 +54,12 @@ bookshelf/
     │   │   ├── lista.png
     │   │   ├── matita.png
     │   │   └──  tema.png  
+    │   ├── img/
+    │   │   ├── collezione.png
+    │   │   ├── libro.png
+    │   │   ├── logo.jpg
+    │   │   ├── profilo.png
+    │   │   └── lista_desideri.png
     │   ├── avatars/                # Immagini profilo utente
     │   ├── covers/                 # Copertine caricate manualmente
     │   ├── no-cover-black.svg
@@ -67,11 +73,6 @@ bookshelf/
     │   ├── modals.css
     │   ├── navbar.css
     │   └── profile.css
-    ├── img/
-    │   ├── collezione.png
-    │   ├── libro.png
-    │   ├── profilo.png
-    │   └── lista_desideri.png
     ├── js/
     │   ├── models/
     │   │   ├── ApiModel.js         # ← MODEL: estende BaseModel, tutti gli endpoint
@@ -90,7 +91,6 @@ bookshelf/
     │       ├── BaseView.js         # ← VIEW BASE: toast, loading, modal, helpers
     │       └── ProfileView.js      # ← pagina profilo utente
     ├── index.html                  # ← VIEW: UI principale
-    ├── logo.jpg
     └── profile.html                # Pagina profilo utente
 ```
 
