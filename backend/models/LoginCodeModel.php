@@ -45,11 +45,11 @@ class LoginCodeModel {
     public function wasRequestedRecently(string $email): bool {
         $stmt = $this->db->prepare(
             "SELECT 1 FROM login_codes
-             WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL :seconds SECOND)
+             WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
              LIMIT 1"
         );
         $stmt->bindValue(1, $email);
-        $stmt->bindValue(':seconds', self::RATE_LIMIT_SECONDS, PDO::PARAM_INT);
+        $stmt->bindValue(2, self::RATE_LIMIT_SECONDS, PDO::PARAM_INT);
         $stmt->execute();
         return (bool)$stmt->fetchColumn();
     }
