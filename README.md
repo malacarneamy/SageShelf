@@ -66,8 +66,7 @@ bookshelf/
     │   ├── layout.css
     │   ├── modals.css
     │   ├── navbar.css
-    │   ├── profile.css
-    │   └── style.css
+    │   └── profile.css
     ├── img/
     │   ├── collezione.png
     │   ├── libro.png
@@ -87,13 +86,11 @@ bookshelf/
     │   │   ├── MarkdownEditor.js   # Auto-pairing, liste automatiche
     │   │   └── MarkdownParser.js   # marked.js + DOMPurify
     │   └── views/
-    │       ├── AppView.js          # ← estende BaseView, rendering + eventi DOM
+    │       ├── AppView.js          # ← estende BaseView, rendering + eventi DOM (include il modal dettaglio libro)
     │       ├── BaseView.js         # ← VIEW BASE: toast, loading, modal, helpers
-    │       ├── BookDetailView.js   # ← pagina standalone book-detail.html
     │       └── ProfileView.js      # ← pagina profilo utente
     ├── index.html                  # ← VIEW: UI principale
     ├── logo.jpg
-    ├── reset-password.html
     └── profile.html                # Pagina profilo utente
 ```
 
@@ -224,8 +221,7 @@ BasePresenter
 └── ShelfPresenter            (CRUD scaffali)
 
 BaseView  (_esc, _formatLabel, _durationText, toast, modal)
-├── AppView                   (rendering DOM, binding eventi, modal dettaglio)
-├── BookDetailView            (pagina standalone book-detail.html)
+├── AppView                   (rendering DOM, binding eventi, modal dettaglio libro)
 └── ProfileView               (pagina profilo utente)
 ```
 
