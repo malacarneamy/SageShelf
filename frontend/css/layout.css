@@ -1,0 +1,249 @@
+/* ============================================================
+   layout.css — Layout principale, scaffali, statistiche
+   ============================================================ */
+
+/* ── Main content ──────────────────────────────────────────── */
+/* Scorre internamente — non il body */
+.main-content { width: 100%; overflow-y: auto; flex: 1 1 0; min-height: 0; }
+.main-content > *:not(.scroll-top-btn) { max-width: 1400px; margin-left: auto; margin-right: auto; padding: 0 1.5rem; }
+
+.content-header     { margin-bottom: 1rem; }
+.content-header-top { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.5rem; margin-bottom: 2.5rem; }
+.header-left        { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+/* Header logo sezione (immagine collezione / lista desideri) */
+.section-header {
+  margin-bottom: 1.5rem;
+  display: flex; justify-content: center; width: 100%;
+}
+.header-logo {
+  height: 100px; width: auto; display: block;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+/* ── Scaffali — pills ──────────────────────────────────────── */
+.shelf-pills       { display: flex; justify-content: center; width: 100%; }
+.shelf-pills-track { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+
+.shelf-pill {
+  padding: .35rem .9rem;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 99px; color: var(--text-muted);
+  font-size: .85rem; font-weight: 600;
+  cursor: pointer; font-family: var(--font-body); white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.shelf-pill:hover        { border-color: var(--moss); color: var(--text); }
+.shelf-pill.active       { background: var(--forest); color: var(--cream); border-color: var(--forest); }
+.shelf-pill--add         { border-style: dashed; }
+.shelf-pill--add:hover   { border-color: var(--moss); color: var(--moss); background: transparent; }
+
+/* Azioni pill (non più usati, mantenuti per compatibilità) */
+.shelf-pill-edit,
+.shelf-pill-delete {
+  background: none; border: none; cursor: pointer;
+  font-size: .8rem; color: var(--text-muted); padding: .2rem;
+  border-radius: var(--radius-sm); transition: color var(--transition);
+}
+.shelf-pill-edit:hover   { color: var(--accent); }
+.shelf-pill-delete:hover { color: var(--red); }
+
+/* ── Scaffali — carosello ──────────────────────────────────── */
+.shelf-name-bar { text-align: center; margin-bottom: 1.5rem; }
+
+/* Layout griglia libri con frecce laterali sticky */
+.books-layout { display: flex; align-items: flex-start; gap: 12px; }
+
+.carousel-arrow {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 50%; color: var(--text); font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+.carousel-arrow:hover:not(:disabled) { background: var(--bg-input); border-color: var(--moss); }
+.carousel-arrow:disabled             { opacity: .3; cursor: not-allowed; }
+
+/* Frecce laterali — sticky al centro viewport durante lo scroll */
+.carousel-arrow--side {
+  position: sticky;
+  top: calc(50vh - var(--navbar-h));
+  margin-top: -54px;
+  align-self: flex-start;
+}
+
+/* Nome scaffale corrente (cliccabile per rinominare) */
+.shelf-current-name            { font-weight: 700; font-size: 1rem; color: var(--text-muted); }
+.shelf-current-name.is-shelf  { cursor: pointer; }
+.shelf-current-name.is-shelf:hover { text-decoration: underline; }
+
+/* Pulsante matita modifica scaffale (legacy) */
+.shelf-edit-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: .9rem; padding: .2rem .4rem; color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: color var(--transition), background var(--transition);
+}
+.shelf-edit-btn:hover { color: var(--accent); background: var(--accent-soft); }
+
+/* Form inline modifica scaffale */
+.shelf-inline-edit {
+  display: flex; align-items: center; gap: 6px;
+  justify-content: center; margin-bottom: 2.5rem;
+}
+.shelf-inline-input {
+  padding: 4px 10px; font-size: .95rem; font-weight: 600;
+  border: 1.5px solid var(--moss); border-radius: var(--radius-sm);
+  font-family: var(--font-body); color: var(--text);
+  background: var(--bg-input); width: 180px;
+}
+.shelf-inline-input:focus { outline: none; border-color: var(--forest); }
+.shelf-inline-save,
+.shelf-inline-cancel,
+.shelf-inline-delete {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: .85rem; padding: 4px 8px;
+  font-family: var(--font-body); transition: all var(--transition);
+}
+.shelf-inline-save:hover   { border-color: var(--moss);  color: var(--moss); }
+.shelf-inline-cancel:hover { border-color: var(--earth); color: var(--earth); }
+.shelf-inline-delete       { border-color: var(--red); color: var(--red); }
+.shelf-inline-delete:hover { background: rgba(166,68,68,.08); }
+
+/* ── Statistiche ───────────────────────────────────────────── */
+.stats-row            { display: flex; justify-content: center; margin-bottom: 2.5rem; }
+.stats-row .stats-bar { flex-wrap: nowrap; }
+.stats-bar            { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+
+/* Card statistica — cliccabile per filtrare per stato */
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: .8rem 1.2rem;
+  text-align: center; min-width: 80px;
+  cursor: pointer; user-select: none;
+  transition: background var(--transition), box-shadow .15s ease, transform .1s ease;
+}
+.stat-card:hover   { background: var(--accent-soft); }
+.stat-card--single { min-width: 200px; }
+
+.stat-number { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; color: var(--earth); line-height: 1; }
+.stat-label  { font-size: .72rem; color: var(--text-muted); margin-top: .2rem; text-transform: uppercase; }
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stats-row { overflow-x: visible; }
+  .stats-bar { flex-wrap: nowrap; gap: 8px; }
+  .stat-card {
+    min-width: 0;
+    flex: 1;
+    padding: .6rem .4rem;
+  }
+  .stat-number { font-size: 1.4rem; }
+  .stat-label  { font-size: .62rem; }
+
+  .books-layout { gap: 0; }
+  .main-content > *:not(.scroll-top-btn) { padding: 0 .75rem; }
+}
+
+/* ── Menu hamburger ────────────────────────────────────── */
+.hamburger-wrap {
+  position: fixed; bottom: 2rem;
+  left: max(0.5rem, calc(50% - 700px - 1.5rem));
+  z-index: 151;
+}
+
+@media (max-width: 768px) {
+  .hamburger-wrap {
+    bottom: calc(64px + .75rem);
+  }
+}
+
+.hamburger-btn {
+  width: 36px; height: 36px;
+  background: var(--forest); border: none; border-radius: 50%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(105,114,84,.3);
+  transition: background var(--transition);
+}
+.hamburger-btn:hover { background: var(--moss); }
+.hamburger-btn span {
+  display: block; width: 14px; height: 2px;
+  background: var(--cream); border-radius: 99px;
+}
+
+.hamburger-menu {
+  position: fixed; bottom: calc(4rem + 36px); left: max(0.5rem, calc(50% - 700px - 1.5rem));
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  min-width: 120px; overflow: hidden;
+  animation: fadeIn .15s ease;
+}
+
+@media (max-width: 768px) {
+  .hamburger-menu {
+    bottom: calc(64px + .75rem + 36px + 1rem);
+  }
+}
+
+.hamburger-item {
+  display: block; width: 100%; padding: .35rem .6rem;
+  background: none; border: none; text-align: left;
+  font-family: var(--font-body); font-size: .78rem;
+  color: var(--text); cursor: pointer; white-space: nowrap;
+  transition: background var(--transition);
+}
+.hamburger-item:hover { background: var(--accent-soft); }
+
+/* ── Pulsante "Torna su" ───────────────────────────────────── */
+.scroll-top-btn {
+  position: fixed; bottom: 2rem;
+  right: max(1.5rem, calc(50% - 700px + 1.5rem));
+  width: 36px !important; height: 36px !important;
+  min-width: 36px; min-height: 36px; max-width: 36px; max-height: 36px;
+  overflow: hidden;
+  background: var(--forest); color: var(--cream);
+  border: none; border-radius: 50%;
+  font-size: 1.2rem; line-height: 0.5; padding: 0;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(105,114,84,.3);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition), transform var(--transition);
+  z-index: 150;
+  flex-shrink: 0;
+}
+.scroll-top-btn.visible { opacity: 1; pointer-events: auto; }
+.scroll-top-btn:hover   { background: var(--moss); transform: translateY(-2px); }
+
+.exit-drag-btn {
+  position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+  background: var(--forest); color: var(--cream);
+  border: none; border-radius: 99px;
+  padding: .6rem 1.4rem; font-family: var(--font-body);
+  font-size: .9rem; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(105,114,84,.3);
+  z-index: 152;
+  transition: background var(--transition);
+}
+.exit-drag-btn:hover { background: var(--moss); }
+
+@media (max-width: 768px) {
+  /* Dimensione immagine header*/
+  .header-logo { height: 60px; }
+  .content-header-top { margin-bottom: 1rem; gap: .75rem; }
+  .section-header { margin-bottom: .75rem; }
+
+  /* Freccia per tornare all'header*/
+  .scroll-top-btn {
+    bottom: calc(64px + .75rem);
+  }
+  .exit-drag-btn {
+    bottom: calc(64px + .75rem);
+  }
+  /* Spazio ultima riga dal fondo*/
+  .main-content { padding-bottom: calc(64px + 1.5rem); }
+}

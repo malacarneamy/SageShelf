@@ -1,0 +1,49 @@
+/* ============================================================
+   auth.css — Schermata login e registrazione (OTP via email)
+   ============================================================ */
+
+/* ── Sfondo auth ───────────────────────────────────────────── */
+#auth-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at top right,   var(--sage), transparent),
+    radial-gradient(circle at bottom left, var(--sand), transparent),
+    var(--cream);
+}
+
+/* ── Card centrale ─────────────────────────────────────────── */
+.auth-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 3rem 2.5rem;
+  width: 100%; max-width: 420px; box-shadow: var(--shadow);
+}
+
+.auth-logo    { text-align: center; margin-bottom: 2rem; }
+.auth-logo h1 { font-family: var(--font-display); font-size: 2.2rem; color: var(--accent); }
+.auth-logo p  { color: var(--text-muted); font-size: .9rem; margin-top: .3rem; }
+
+/* ── Link toggle login/registrazione e "torna indietro" ────── */
+.auth-toggle-link {
+  display: block; text-align: center; margin-top: 1.2rem;
+  color: var(--text-muted); font-size: .88rem;
+  cursor: pointer; background: none; border: none;
+  text-decoration: underline; font-family: var(--font-body);
+  transition: color var(--transition);
+}
+.auth-toggle-link:hover { color: var(--accent); }
+
+/* ── Step 2: verifica codice OTP ────────────────────────────── */
+/* Messaggio "Codice inviato a ..." sopra il campo del codice */
+.auth-code-hint {
+  text-align: center; font-size: .88rem;
+  color: var(--text-muted); margin-bottom: 1.2rem;
+}
+.auth-code-hint strong { color: var(--text); font-weight: 700; }
+
+/* Campo codice: centrato, spaziato, leggibile a colpo d'occhio */
+#auth-code {
+  text-align: center;
+  font-size: 1.4rem; font-weight: 700;
+  letter-spacing: .5rem;
+}

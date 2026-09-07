@@ -1,0 +1,149 @@
+/* ============================================================
+   profile.css — Pagina profilo utente
+   Override necessari perché body/html hanno overflow:hidden
+   ============================================================ */
+
+/* ── Sblocca scroll per le pagine standalone ───────────────── */
+html.profile-page-html {
+  height: 100%; overflow: hidden !important;
+}
+body.profile-page-body {
+  height: 100%; overflow: hidden !important;
+  display: flex; flex-direction: column;
+}
+body.profile-page-body .main-content {
+  overflow-y: auto !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+}
+
+/* ── Contenitore pagina profilo ────────────────────────────── */
+.profile-page {
+  max-width: 600px; margin: 0 auto; padding: 2rem 1.5rem;
+  display: flex; flex-direction: column; gap: 2rem;
+}
+
+.profile-title {
+  font-family: var(--font-display); font-size: 2rem;
+  color: var(--text); margin-bottom: .5rem;
+}
+
+.profile-version {
+  text-align: center;
+  font-size: .75rem;
+  color: var(--text-muted);
+  opacity: .4;
+  margin-top: 0;
+  margin-bottom: 0;
+  font-family: var(--font-body);
+  letter-spacing: .05em;
+  line-height: 1.2;
+}
+
+/* ── Card contenitore sezioni ──────────────────────────────── */
+.profile-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.profile-card--danger { border-color: var(--red); }
+.profile-card .btn-confirm,
+.profile-card .btn-danger-sm { align-self: flex-start; }
+
+.profile-card-title {
+  font-family: var(--font-display); font-size: 1.3rem;
+  color: var(--accent); margin: 0;
+}
+
+.profile-danger-text { font-size: .88rem; color: var(--text-muted); }
+
+/*─── Titolo pagina ─────────────────────────────────────────────*/
+.profile-page .header-logo {
+  height: 80px;
+  margin: 0 auto -1rem;
+  display: block;
+}
+
+/* ── Avatar — sezione centrata sopra la card ───────────────── */
+.profile-avatar-section {
+  display: flex; justify-content: center; margin-bottom: 1.5rem;
+  margin-bottom: 0;
+}
+/* Dimensioni avatar nella sezione dedicata */
+.profile-avatar-section .profile-avatar-wrap        { width: 120px; height: 120px; }
+.profile-avatar-section .profile-avatar-img         { width: 120px; height: 120px; }
+.profile-avatar-section .profile-avatar-placeholder { width: 120px; height: 120px; font-size: 3.5rem; }
+
+/* Wrapper avatar (usato anche nella card identità) */
+.profile-avatar-wrap {
+  display: flex; align-items: center; justify-content: center;
+  width: 100px; height: 100px; position: relative;
+}
+.profile-avatar-img {
+  width: 100px; height: 100px;
+  border-radius: 50%; object-fit: cover;
+  border: 3px solid var(--moss);
+}
+.profile-avatar-placeholder {
+  width: 100px; height: 100px;
+  border-radius: 50%; background: var(--sand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; border: 3px solid var(--border);
+}
+
+/* Overlay fotocamera sull'avatar (hover) */
+.profile-avatar-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.5); color: #fff;
+  text-align: center; font-size: .9rem;
+  padding: 4px 0; cursor: pointer;
+  opacity: 0; transition: opacity .2s ease;
+  border-radius: 0 0 50% 50%;
+}
+.profile-avatar-wrap:hover .profile-avatar-overlay { opacity: 1; }
+
+/* Pulsante × rimozione avatar */
+.profile-avatar-remove {
+  position: absolute; top: 0; right: 0;
+  width: 22px; height: 22px;
+  background: var(--red); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 1rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s ease;
+}
+.profile-avatar-wrap:hover .profile-avatar-remove { opacity: 1; }
+
+.profile-avatar-actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+
+/* ── Layout avatar + campi identità ────────────────────────── */
+.profile-identity         { display: flex; gap: 1.5rem; align-items: flex-start; }
+.profile-identity-fields  { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.profile-identity-actions { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Campi inline (username, email) ────────────────────────── */
+/* Il pulsante "Salva" appare solo se il valore è stato modificato.
+   L'email è sola lettura (vedi ProfileView.js): niente pulsante lì. */
+.profile-field       { display: flex; flex-direction: column; gap: .5rem; }
+.profile-field-label { font-size: .75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.profile-field-row   { display: flex; gap: .75rem; align-items: center; }
+.profile-field-input {
+  flex: 1; padding: .65rem 1rem;
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-body); font-size: .95rem;
+  transition: border-color var(--transition);
+}
+.profile-field-input:focus { outline: none; border-color: var(--moss); }
+.profile-field-input:read-only {
+  background: transparent; color: var(--text-muted); cursor: default;
+}
+.profile-field-btn   { flex-shrink: 0; }
+.profile-extra-field { margin-top: .5rem; }
+
+/* Separatore tra campi */
+.profile-divider { border: none; border-top: 1px solid var(--border); margin: .25rem 0; }
+
+/* Riga pulsanti azioni (elimina account) */
+.profile-actions { display: flex; gap: .75rem; flex-wrap: wrap; }

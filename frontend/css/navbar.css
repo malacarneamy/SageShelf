@@ -1,0 +1,211 @@
+/* ============================================================
+   navbar.css — Navbar, avatar, ricerca, bottoni nav
+   ============================================================ */
+
+/* ── App screen come colonna flex ──────────────────────────── */
+#app-screen { height: 100vh; display: flex !important; flex-direction: column; overflow: hidden; }
+
+/* ── Navbar ────────────────────────────────────────────────── */
+.navbar {
+  height: var(--navbar-h);
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0 1.5rem;
+  background: var(--sand);
+  border-bottom: 1px solid rgba(105, 114, 84, 0.2);
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* Logo + nome app */
+.navbar-brand {
+  font-family: var(--font-display); font-size: 1.6rem; font-style: italic;
+  color: var(--forest);
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none;
+}
+.nav-logo {
+  height: 35px; width: 35px;
+  object-fit: cover; border-radius: 8px;
+  border: 1px solid var(--forest);
+}
+
+/* ── Pill group sezioni (Collezione / Lista desideri) ──────── */
+.nav-sections {
+  display: flex; gap: .2rem;
+  background: rgba(167, 173, 137, 0.2);
+  padding: .25rem; border-radius: var(--radius-sm);
+  border: 1px solid rgba(140, 145, 108, 0.3);
+  flex-shrink: 0;
+}
+.nav-section {
+  padding: .4rem 1rem;
+  background: transparent; border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--moss); font-size: .88rem; font-weight: 600;
+  cursor: pointer; font-family: var(--font-body);
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+.nav-section:hover  { color: var(--forest); }
+.nav-section.active { background: var(--forest); color: var(--sand); }
+
+/* ── Pulsante "+ Aggiungi" ─────────────────────────────────── */
+.btn-nav {
+  padding: .5rem 1rem;
+  background: var(--forest); color: var(--sand);
+  border: none; font-size: .85rem; font-weight: 700; flex-shrink: 0;
+  transition: opacity var(--transition);
+}
+.btn-nav:hover { opacity: .9; }
+
+/* ── Barra di ricerca ──────────────────────────────────────── */
+.navbar-search { flex: 1; position: relative; max-width: 600px; }
+.navbar-search input {
+  width: 100%; padding: .6rem 1rem .6rem 2.2rem;
+  background: rgba(140, 145, 108, 0.15);
+  border: 1px solid var(--moss); border-radius: var(--radius-sm);
+  color: var(--forest); font-family: var(--font-body); font-size: .9rem;
+  transition: all var(--transition);
+}
+.navbar-search input:focus {
+  outline: none;
+  background: rgba(140, 145, 108, 0.25);
+  border-color: var(--forest);
+  box-shadow: 0 0 0 3px rgba(105, 114, 84, 0.1);
+}
+
+/* ── Destra navbar: avatar/profilo + esci ──────────────────── */
+.navbar-actions { display: flex; align-items: center; gap: .6rem; margin-left: auto; }
+
+/* Pulsante "Esci" */
+.btn-nav-ghost {
+  padding: .5rem .8rem;
+  background: transparent; color: var(--moss);
+  border: 1px solid var(--moss); font-size: .85rem;
+  transition: all var(--transition);
+}
+.btn-nav-ghost:hover {
+  color: var(--forest); border-color: var(--forest);
+  background: rgba(105, 114, 84, 0.05);
+}
+
+/* Icona profilo (fallback senza avatar) */
+.nav-profile {
+  width: 34px; height: 34px;
+  background: rgba(167, 173, 137, 0.3); border: 1px solid var(--moss);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; cursor: pointer; color: var(--forest);
+}
+
+/* Avatar nella navbar */
+.nav-avatar-img {
+  width: 34px; height: 34px;
+  border-radius: 50%; object-fit: cover;
+  border: 2px solid var(--moss);
+}
+
+.search-icon {
+  position: absolute; left: .7rem; top: 50%; transform: translateY(-50%);
+  width: 1rem; height: 1rem; object-fit: contain;
+  pointer-events: none; opacity: .6;
+}
+
+/* ── Bottom nav: nascosta su desktop ───────────────────────── */
+.bottom-nav { display: none; }
+
+/* ── Responsive: bottom nav su mobile ─────────────────────── */
+@media (max-width: 768px) {
+
+  /* Navbar top semplificata */
+  .nav-sections,
+  .btn-nav,
+  .btn-nav-ghost { display: none; }
+
+  .navbar {
+    padding: 0 1rem;
+    justify-content: space-between;
+  }
+
+  /* Brand più piccolo per lasciare spazio alla ricerca */
+  .navbar-brand {
+    font-size: 1rem;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .nav-logo { height: 26px; width: 26px; }
+  .navbar-brand-text { font-size: 1rem; }
+
+  .navbar-search {
+    flex: 1;
+    margin: 0 .6rem;
+    max-width: none;
+  }
+
+  .navbar-actions { margin-left: 0; }
+
+  /* Spazio sotto per non finire sotto la bottom nav */
+  #app-screen { padding-bottom: 64px; }
+
+  /* ── Bottom nav ─────────────────────────────────────────── */
+  #auth-screen ~ .bottom-nav,
+    body:has(#auth-screen:not(.hidden)) .bottom-nav {
+      display: none;
+    }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--sand);
+    border-top: 1px solid rgba(105, 114, 84, 0.2);
+    z-index: 200;
+    align-items: stretch;
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px;
+    background: none; border: none;
+    color: var(--moss); font-size: .65rem; font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer; text-decoration: none;
+    transition: color var(--transition);
+    padding: 0;
+  }
+
+  .bottom-nav-item:hover,
+  .bottom-nav-item.active { color: var(--forest); }
+
+  .bottom-nav-item svg {
+    width: 22px; height: 22px;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* Avatar profilo nella bottom nav */
+  .bottom-nav-item--profile svg { display: block; }
+  .bottom-nav-item--profile .nav-avatar-img {
+    width: 26px; height: 26px;
+    border-radius: 50%; object-fit: cover;
+    border: 2px solid var(--moss);
+    display: block;
+  }
+  /* Quando c'è l'avatar, nascondi l'svg */
+  .bottom-nav-item--profile:has(.nav-avatar-img) svg { display: none; }
+
+  /* Pulsante centrale "Aggiungi" */
+  .bottom-nav-item--add { color: var(--moss); }
+  .bottom-nav-item--add .bottom-nav-bubble {
+    width: 46px; height: 46px;
+    background: var(--forest);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 2px;
+    box-shadow: 0 2px 8px rgba(105,114,84,0.35);
+  }
+  .bottom-nav-item--add svg { stroke: var(--sand); }
+  .bottom-nav-item--add span { color: var(--moss); }
+  #nav-username-desktop { display: none; }
+}

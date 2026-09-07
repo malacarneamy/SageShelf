@@ -1,0 +1,376 @@
+/* ============================================================
+   book-detail.css — Modal scheda libro
+   Dipende da style.css per le variabili globali.
+   Gestisce #modal-book-detail e tutti i suoi componenti:
+   header, progress, date, stelle, note, edizione, azioni.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* ── Token semantici locali ────────────────────────────────── */
+/* Alias delle variabili globali con nomi interni al modal.
+   Nessun colore ridefinito — tutto punta a style.css. */
+:root {
+  --bd-bg:           var(--cream);
+  --bd-surface:      var(--bg-card);
+  --bd-border:       var(--sand);
+  --bd-border-light: rgba(182, 156, 133, 0.4);
+  --bd-text:         var(--forest);
+  --bd-muted:        var(--earth);
+  --bd-accent:       var(--moss);
+  --bd-accent-soft:  rgba(140, 145, 108, 0.15);
+  --bd-star-off:     var(--sand);
+  --bd-star-on:      var(--earth);
+  --bd-serif:        'Lora', Georgia, serif;
+  --bd-sans:         var(--font-body);
+  --bd-radius:       14px;
+  --bd-radius-sm:    8px;
+  --bd-ease:         .2s ease;
+}
+
+/* ── Backdrop ──────────────────────────────────────────────── */
+/* Il backdrop scorre il modal, non il body */
+#modal-book-detail {
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px 16px; overflow: hidden;
+}
+#modal-book-detail.hidden { display: none; }
+
+/* ── Contenitore modal ─────────────────────────────────────── */
+.bd-modal {
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-border);
+  border-radius: var(--bd-radius);
+  box-shadow: 0 12px 48px rgba(105, 114, 84, 0.2);
+  width: 100%; max-width: 620px;
+  max-height: calc(100vh - 40px);
+  display: flex; flex-direction: column; /* corpo scorre, azioni fisse in basso */
+  overflow: hidden; position: relative;
+  animation: bdSlideIn .26s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes bdSlideIn {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Corpo scorrevole con scrollbar sottile */
+.bd-modal-body {
+  flex: 1 1 auto; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--bd-border) transparent;
+}
+.bd-modal-body::-webkit-scrollbar       { width: 4px; }
+.bd-modal-body::-webkit-scrollbar-track { background: transparent; }
+.bd-modal-body::-webkit-scrollbar-thumb { background: var(--bd-border); border-radius: 99px; }
+
+/* ── Spinner di caricamento ────────────────────────────────── */
+.bd-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--bd-border);
+  border-top-color: var(--bd-accent);
+  border-radius: 50%;
+  animation: bdSpin .7s linear infinite;
+}
+@keyframes bdSpin { to { transform: rotate(360deg); } }
+
+/* ── Header: copertina + titolo + pillole ──────────────────── */
+.bd-header {
+  display: flex; gap: 24px; padding: 28px 28px 26px;
+  background: linear-gradient(150deg, var(--sand) 0%, var(--bd-surface) 60%);
+  border-bottom: 1px solid var(--bd-border-light);
+}
+
+/* Copertina */
+.bd-cover-wrap { position: relative; flex-shrink: 0; }
+.bd-cover {
+  width: 90px; height: 132px; display: block;
+  object-fit: cover; border-radius: 7px;
+  box-shadow: 4px 8px 22px rgba(105, 114, 84, 0.2);
+}
+
+/* Overlay upload copertina — appare all'hover sulla copertina */
+.bd-cover-upload-btn {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,.5); color: #fff;
+  text-align: center; font-size: 1rem; padding: 4px 0;
+  cursor: pointer; display: block;
+  border-radius: 0 0 7px 7px;
+  opacity: 0; transition: opacity var(--bd-ease);
+}
+.bd-cover-wrap:hover .bd-cover-upload-btn { opacity: 1; }
+
+/* Pulsante × rimozione copertina — top-right sull'immagine */
+.bd-cover-remove-btn {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px;
+  background: rgba(0,0,0,.55); color: #fff;
+  border: none; border-radius: 50%;
+  font-size: .65rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity var(--bd-ease);
+}
+.bd-cover-wrap:hover .bd-cover-remove-btn { opacity: 1; }
+
+/* Badge stato lettura sovrapposto alla copertina */
+.bd-status-badge {
+  position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  font-size: .6rem; font-weight: 700; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+  background: var(--bd-surface); border: 1.5px solid currentColor;
+}
+.bd-status-read         { color: var(--forest); }
+.bd-status-reading      { color: var(--earth);  }
+.bd-status-want_to_read { color: var(--moss);   }
+
+/* Info testuale header */
+.bd-header-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.bd-title       { font-family: var(--bd-serif); font-size: 1.35rem; font-weight: 600; color: var(--bd-text); margin: 0; line-height: 1.25; }
+.bd-author      { font-family: var(--bd-serif); font-size: .92rem; font-style: italic; color: var(--bd-muted); margin: 0; }
+
+/* Pillole metadati (editore, anno, pagine, lingua, formato) */
+.bd-pub-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.bd-pub-pill {
+  font-size: .71rem; font-weight: 600; white-space: nowrap;
+  color: var(--bd-muted); background: var(--bd-surface);
+  border: 1.5px solid var(--bd-border-light); border-radius: 20px; padding: 2px 8px;
+}
+
+/* Riga serie e acquisizione */
+.bd-series      { display: flex; align-items: center; gap: 5px; font-size: .83rem; color: var(--bd-muted); }
+.bd-series-icon { color: var(--bd-accent); }
+.bd-acquisition { display: flex; align-items: center; gap: 5px; font-size: .81rem; color: var(--bd-muted); }
+
+/* ── Sezione generica ──────────────────────────────────────── */
+.bd-section { padding: 22px 28px; border-bottom: 1px solid var(--bd-border-light); }
+
+/* Label sezione (in maiuscolo, sopra al contenuto) */
+.bd-section-label {
+  display: block; margin-bottom: 10px;
+  font-size: .69rem; font-weight: 600;
+  color: var(--earth); text-transform: uppercase; letter-spacing: .08em;
+}
+/* Label campo singolo */
+.bd-field-label {
+  display: block; margin-bottom: 4px;
+  font-size: .69rem; font-weight: 500;
+  color: var(--earth); text-transform: uppercase; letter-spacing: .05em;
+}
+
+/* ── Input e select interni al modal ───────────────────────── */
+/* Stile base condiviso — evita ripetizioni tra tipi di input */
+.bd-text-input,
+.bd-select-input,
+.bd-page-input,
+.bd-date-input {
+  border: 1.5px solid var(--bd-border); border-radius: var(--bd-radius-sm);
+  font-size: .87rem; font-family: var(--bd-sans);
+  color: var(--bd-text); background: var(--bd-bg);
+  transition: border-color var(--bd-ease), background var(--bd-ease);
+}
+.bd-text-input:focus,
+.bd-select-input:focus,
+.bd-page-input:focus,
+.bd-date-input:focus { outline: none; border-color: var(--bd-accent); }
+
+/* Larghezza piena per text e select */
+.bd-text-input,
+.bd-select-input { width: 100%; padding: 6px 10px; box-sizing: border-box; }
+
+/* Input pagine: compact e senza frecce numeriche */
+.bd-page-input {
+  width: 52px; padding: 4px 6px; text-align: center;
+  -moz-appearance: textfield;
+}
+.bd-page-input::-webkit-inner-spin-button,
+.bd-page-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.bd-page-input[readonly] { background: var(--bd-border-light); color: var(--bd-muted); cursor: default; }
+
+/* Input data: larghezza piena */
+.bd-date-input { width: 100%; padding: 6px 10px; box-sizing: border-box; }
+
+/* ── Progress bar lettura ──────────────────────────────────── */
+.bd-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bd-progress-pages  { display: flex; align-items: center; gap: 4px; font-size: .87rem; }
+.bd-page-sep        { color: var(--bd-muted); }
+
+.bd-bar-track { height: 10px; background: var(--bd-border); border-radius: 999px; overflow: hidden; }
+.bd-bar-fill  {
+  height: 100%; min-width: 2px;
+  background: linear-gradient(90deg, var(--bd-accent), #a7c4a2);
+  border-radius: 999px;
+  transition: width .45s cubic-bezier(.4,0,.2,1);
+}
+.bd-bar-pct { font-size: .71rem; font-weight: 500; color: var(--bd-muted); text-align: right; margin-top: 4px; }
+
+/* ── Date lettura ──────────────────────────────────────────── */
+.bd-dates-row  { display: flex; align-items: center; gap: 12px; }
+.bd-date-field { flex: 1; display: flex; flex-direction: column; }
+.bd-date-arrow { color: var(--bd-muted); flex-shrink: 0; font-size: 1rem; margin-top: 18px; }
+.bd-duration   { margin: 8px 0 0; font-size: .81rem; color: var(--bd-muted); font-style: italic; min-height: 1.1em; }
+
+/* ── Stato lettura + scaffale ──────────────────────────────── */
+.bd-status-section { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.bd-status-group,
+.bd-shelf-group    { display: flex; flex-direction: column; gap: 6px; }
+.bd-shelf-group    { flex: 1; min-width: 150px; }
+.bd-status-btns    { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.bd-status-btn {
+  font-family: var(--bd-sans); font-size: .82rem;
+  padding: 6px 13px; border-radius: 20px;
+  border: 1.5px solid var(--bd-border);
+  background: transparent; color: var(--bd-muted);
+  cursor: pointer; transition: all var(--bd-ease);
+}
+.bd-status-btn:hover  { border-color: var(--bd-accent); color: var(--bd-accent); }
+.bd-status-btn.active { background: var(--bd-accent-soft); border-color: var(--bd-accent); color: var(--bd-accent); font-weight: 600; }
+
+/* ── Recensione ────────────────────────────────────────────── */
+.bd-review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+.bd-stars       { display: flex; gap: 3px; cursor: pointer; }
+.bd-star        { font-size: 1.5rem; color: var(--bd-star-off); user-select: none; line-height: 1; transition: color .12s ease, transform .1s ease; }
+.bd-star:hover  { transform: scale(1.18); }
+.bd-star.active { color: var(--bd-star-on); }
+
+/* ── Textarea condivisa (recensione e note) ────────────────── */
+.bd-review-textarea,
+.bd-notes-textarea {
+  width: 100%; box-sizing: border-box; display: block;
+  min-height: 100px; margin-top: 8px; padding: 10px 12px;
+  background: var(--bd-bg); color: var(--bd-text);
+  transition: border-color var(--bd-ease);
+}
+.bd-review-textarea::placeholder,
+.bd-notes-textarea::placeholder { color: var(--sand); opacity: .8; }
+.bd-review-textarea:focus,
+.bd-notes-textarea:focus        { outline: none; border-color: var(--bd-accent); }
+
+/* Anteprima markdown — stesso aspetto della textarea, appare al blur */
+.bd-md-preview {
+  display: none;
+  width: 100%; box-sizing: border-box;
+  min-height: 100px; padding: 10px 12px; margin-top: 8px;
+  background: var(--bd-bg); color: var(--bd-text);
+  border: 1.5px solid var(--bd-border); border-radius: var(--bd-radius-sm);
+  font-size: .9rem; font-family: var(--bd-serif);
+  line-height: 1.65; cursor: text;
+}
+.bd-md-preview p         { margin: .3em 0; }
+.bd-md-preview strong    { font-weight: 700; }
+.bd-md-preview em        { font-style: italic; }
+.bd-md-preview ul,
+.bd-md-preview ol        { padding-left: 1.4em; margin: .3em 0; }
+.bd-md-preview blockquote {
+  border-left: 3px solid var(--bd-border); margin: .4em 0;
+  padding-left: .8em; color: var(--bd-muted); font-style: italic;
+}
+.bd-md-preview code {
+  background: rgba(140,145,108,.2); padding: 1px 5px;
+  border-radius: 4px; font-family: monospace; font-size: .85em;
+}
+
+.bd-notes-section { background: var(--bd-surface); } /* sfondo leggermente distinto */
+.bd-char-count    { text-align: right; font-size: .7rem; color: var(--earth); margin: 4px 0 0; }
+
+/* ── Campi extra (serie, acquisizione) ─────────────────────── */
+.bd-extra-row            { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.bd-extra-row:last-child { margin-bottom: 0; }
+.bd-field-group          { display: flex; flex-direction: column; }
+.bd-field-grow           { flex: 1; min-width: 120px; }
+.bd-field-small          { width: 90px; }
+.bd-field-full           { width: 100%; }
+
+/* ── Dettagli edizione ─────────────────────────────────────── */
+.bd-edition-head           { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.bd-edition-summary-static { margin-bottom: 12px; }
+.bd-edition-autofill       { font-size: .72rem; color: var(--forest); font-weight: 500; transition: opacity .3s; }
+.bd-edition-grid           { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; }
+
+/* Riga ISBN con pulsante "Cerca" inline */
+.bd-isbn-row                { display: flex; gap: 8px; align-items: stretch; }
+.bd-isbn-row .bd-text-input { flex: 1; }
+.bd-isbn-fetch-btn {
+  font-family: var(--bd-sans); font-size: .8rem; font-weight: 500;
+  padding: 0 14px; white-space: nowrap; flex-shrink: 0;
+  border: 1.5px solid var(--bd-accent); border-radius: var(--bd-radius-sm);
+  background: var(--bd-accent-soft); color: var(--bd-accent);
+  cursor: pointer; transition: all var(--bd-ease);
+}
+.bd-isbn-fetch-btn:hover { background: var(--bd-accent); color: #fff; }
+
+/* Flash verde al completamento autofill ISBN */
+@keyframes bdAutofill {
+  0%   { background: #f0f4ef; border-color: var(--forest); }
+  100% { background: var(--bd-bg); border-color: var(--bd-border); }
+}
+.bd-autofilled { animation: bdAutofill 2s ease forwards; }
+
+/* ── Barra azioni fissa in basso ───────────────────────────── */
+/* Fuori da .bd-modal-body: non scorre con il contenuto */
+.bd-actions {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 12px 28px;
+  background: var(--bd-surface); border-top: 1px solid var(--bd-border-light);
+  flex-shrink: 0;
+}
+.bd-actions-left { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+
+/* I tre bottoni della barra (Rimuovi, Sposta, Salva) hanno forma identica */
+.bd-actions .btn-danger-sm,
+.bd-actions .btn-confirm,
+.bd-actions .btn-move {
+  font-family: var(--bd-sans); font-size: .82rem; font-weight: 500;
+  padding: 6px 14px; height: 34px; line-height: 1;
+  border-radius: 20px; border: 1.5px solid var(--sand);
+  background: transparent; color: var(--earth);
+  cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: all var(--bd-ease);
+}
+
+.bd-actions .btn-move:hover       { border-color: var(--forest); color: var(--forest); background: var(--bd-accent-soft); }
+.bd-actions .btn-danger-sm        { border-color: var(--red); color: var(--red); }
+.bd-actions .btn-danger-sm:hover  { background: rgba(166,68,68,.08); border-color: var(--red); }
+.bd-actions .btn-confirm          { background: var(--forest); border-color: var(--forest); color: var(--cream); font-weight: 600; }
+.bd-actions .btn-confirm:hover    { background: var(--moss); border-color: var(--moss); }
+.bd-actions .btn-confirm:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ── Stat card filtro attivo ───────────────────────────────── */
+.stat-card--active              { background: var(--bd-accent-soft) !important; box-shadow: inset 0 0 0 2px var(--bd-accent); transform: scale(1.03); }
+.stat-card--active .stat-number { color: var(--bd-accent); }
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .bd-header, .bd-section, .bd-actions { padding-left: 16px; padding-right: 16px; }
+  .bd-edition-grid    { grid-template-columns: 1fr; }
+  .bd-cover           { width: 70px; height: 104px; }
+  .bd-title           { font-size: 1.1rem; }
+  .bd-dates-row       { flex-wrap: wrap; }
+  .bd-date-arrow      { display: none; }
+  .bd-status-section  { flex-direction: column; align-items: stretch; }
+  .bd-isbn-row        { flex-wrap: wrap; }
+  .bd-isbn-fetch-btn  { width: 100%; padding: 8px; text-align: center; }
+}
+
+@media (max-width: 768px) {
+  #modal-book-detail {
+    align-items: flex-start;
+    padding: 0;
+  }
+  .bd-modal {
+    max-height: calc(100vh - 130px);
+    border-radius: 18px 18px 0 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .bd-actions {
+    justify-content: center;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .bd-actions-left {
+    justify-content: center;
+  }
+}
