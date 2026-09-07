@@ -4,6 +4,7 @@
 define('BASE_PATH', dirname(__DIR__));
 
 // ── .env loader ──────────────────
+$GLOBALS['__env'] = [];
 $envFile = BASE_PATH . '/.env';
 if (file_exists($envFile)) {
     foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
@@ -11,10 +12,29 @@ if (file_exists($envFile)) {
         [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
         $key = trim($key);
         $value = trim($value);
-        if ($key !== '' && getenv($key) === false) {
-            putenv("$key=$value");
+        if ($key !== '') {
+            $GLOBALS['__env'][$key] = $value;
+            // Teniamo anche putenv/$_ENV come fallback nel caso siano
+            // effettivamente disponibili su un altro ambiente/host.
+            if (getenv($key) === false) {
+                @putenv("$key=$value");
+            }
+            $_ENV[$key] = $value;
         }
     }
+}
+
+/**
+ * Legge una variabile d'ambiente da .env, con fallback a getenv()/$_ENV
+ * per ambienti dove putenv() funziona normalmente (es. in locale).
+ */
+function env(string $key, ?string $default = null): ?string {
+    if (array_key_exists($key, $GLOBALS['__env'] ?? [])) {
+        return $GLOBALS['__env'][$key];
+    }
+    $v = getenv($key);
+    if ($v !== false) return $v;
+    return $_ENV[$key] ?? $default;
 }
 
 // ── Autoload ────────────────────────────────────────────────
@@ -27,14 +47,14 @@ spl_autoload_register(function (string $class): void {
 });
 
 // ── Cloudinary ───────────────────────────────────────────────
-define('CLOUDINARY_CLOUD_NAME', getenv('CLOUDINARY_CLOUD_NAME') ?: '');
-define('CLOUDINARY_API_KEY',    getenv('CLOUDINARY_API_KEY') ?: '');
-define('CLOUDINARY_API_SECRET', getenv('CLOUDINARY_API_SECRET') ?: '');
+define('CLOUDINARY_CLOUD_NAME', env('CLOUDINARY_CLOUD_NAME') ?: '');
+define('CLOUDINARY_API_KEY',    env('CLOUDINARY_API_KEY') ?: '');
+define('CLOUDINARY_API_SECRET', env('CLOUDINARY_API_SECRET') ?: '');
 
 // ── Mail (per invio codici OTP, via Resend API) ───────────────
-define('MAIL_FROM',      getenv('MAIL_FROM') ?: 'onboarding@resend.dev');
-define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'SageShelf');
-define('MAIL_API_KEY',   getenv('MAIL_API_KEY') ?: '');
+define('MAIL_FROM',      env('MAIL_FROM') ?: 'onboarding@resend.dev');
+define('MAIL_FROM_NAME', env('MAIL_FROM_NAME') ?: 'SageShelf');
+define('MAIL_API_KEY',   env('MAIL_API_KEY') ?: '');
 
 // ── Session ─────────────────────────────────────────────────
 const SESSION_LIFETIME = 60 * 60 * 24 * 30; // 30 giorni in secondi
@@ -53,7 +73,7 @@ session_start();
 
 // ── CORS ─────────────────────────────────────────────────────
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowed = array_filter(explode(',', getenv('CORS_ALLOWED_ORIGINS') ?: 'https://sageshelf.great-site.net'));
+$allowed = array_filter(explode(',', env('CORS_ALLOWED_ORIGINS') ?: 'https://sageshelf.great-site.net'));
 if (in_array($origin, $allowed, true)) {
     header("Access-Control-Allow-Origin: $origin");
 }
