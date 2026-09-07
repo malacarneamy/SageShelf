@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <script>
+    const t = localStorage.getItem('sageshelf-theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.setAttribute('data-theme', 'default');
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SageShelf</title>
+  <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/books.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/book-detail.css">
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>SageShelf</h1>
+      <p>La tua Collezione personale</p>
+    </div>
+    <div id="auth-step-request">
+    <form id="auth-form-request" autocomplete="off" novalidate>
+      <div id="auth-mode" data-mode="login"></div>
+      <div id="auth-username-group" class="form-group hidden">
+        <label for="auth-username">Username</label>
+        <input type="text" id="auth-username" placeholder="Il tuo nome">
+      </div>
+      <div class="form-group">
+        <label for="auth-email">Email</label>
+        <input type="email" id="auth-email" placeholder="email@esempio.it" required>
+      </div>
+      <button type="submit" id="auth-btn" class="btn-primary">Invia codice</button>
+    </form>
+    <button id="auth-toggle" class="auth-toggle-link">Non hai un account? Registrati</button>
+    </div>
+
+    <!-- STEP 2: inserimento codice ricevuto via email (nascosto finché non si invia lo step 1) -->
+    <div id="auth-step-verify" class="hidden">
+      <p class="auth-code-hint">Codice inviato a <strong id="auth-code-sent-to"></strong></p>
+      <form id="auth-form-verify" autocomplete="off" novalidate>
+        <div class="form-group">
+          <label for="auth-code">Codice di accesso</label>
+          <input type="text" id="auth-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456" required>
+        </div>
+        <button type="submit" id="auth-verify-btn" class="btn-primary">Verifica</button>
+      </form>
+      <button type="button" id="auth-back-btn" class="auth-toggle-link">← Cambia email</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen" class="hidden">
+
+  <nav class="navbar">
+    <span class="navbar-brand">
+      <img src="assets/img/logo.jpg" alt="Logo" class="nav-logo">
+      <span class="navbar-brand-text">SageShelf</span>
+    </span>
+    <div class="nav-sections">
+      <button class="nav-section active" data-section="library">Collezione</button>
+      <button class="nav-section" data-section="wishlist">Lista desideri</button>
+    </div>
+    <button id="btn-scan" class="btn-nav">Aggiungi</button>
+    <div class="navbar-actions">
+      <div class="navbar-search">
+        <img src="assets/icon/lente.png" alt="" class="search-icon">
+        <input type="search" id="search-input" placeholder="Cerca per titolo o autore…">
+      </div>
+      <a href="profile.html" class="nav-profile" id="nav-username-desktop" title="Profilo">👤</a>
+      <button id="btn-logout" class="btn-nav-ghost">Esci</button>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="content-header">
+      <div class="content-header-top">
+        <div class="header-left">
+          <div id="section-header" class="section-header">
+            <img src="assets/img/collezione.png" alt="Collezione" class="header-logo">
+          </div>
+          <div id="shelf-pills" class="shelf-pills">
+            <div id="shelf-pills-track" class="shelf-pills-track"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="stats-row" class="stats-row">
+      <div id="stats-library" class="stats-bar">
+        <div class="stat-card"><div class="stat-number" id="stat-total">0</div><div class="stat-label">Totale</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-want">0</div><div class="stat-label">Da leggere</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-reading">0</div><div class="stat-label">In lettura</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-read">0</div><div class="stat-label">Letti</div></div>
+      </div>
+      <div id="stats-wishlist" class="stats-bar hidden">
+        <div class="stat-card stat-card--single"><div class="stat-number" id="stat-wish-total">0</div><div class="stat-label">Libri desiderati</div></div>
+      </div>
+    </div>
+
+    <div class="books-section">
+      <div class="shelf-name-bar">
+        <span id="shelf-current-name" class="shelf-current-name">Tutti</span>
+      </div>
+      <div class="books-layout">
+        <button id="shelf-prev" class="carousel-arrow carousel-arrow--side" disabled>‹</button>
+        <div id="book-grid" class="book-grid"></div>
+        <button id="shelf-next" class="carousel-arrow carousel-arrow--side">›</button>
+      </div>
+    </div>
+
+<!-- MODAL: BOOK DETAIL (contenuto iniettato dinamicamente da AppView._renderDetailModal) -->
+<div id="modal-book-detail" class="modal-backdrop hidden"></div>
+
+<!-- MODAL: SCELTA METODO -->
+<div id="modal-add-choice" class="modal-backdrop hidden">
+  <div class="modal modal-choice">
+    <h2>Aggiungi libro</h2>
+    <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1.5rem;">Come vuoi aggiungere il libro?</p>
+    <div class="choice-btns">
+    <button id="btn-open-scan" class="choice-btn">
+      <img src="assets/icon/fotocamera.png" alt="Fotocamera" class="choice-icon-img" style="width:2.4rem;height:2.4rem;">
+      <span class="choice-label">Scansiona codice</span>
+      <span class="choice-desc">Usa la fotocamera o inserisci l'ISBN</span>
+    </button>
+    <button id="btn-open-manual" class="choice-btn">
+      <img src="assets/icon/matita.png" alt="Manuale" class="choice-icon-img">
+      <span class="choice-label">Inserisci manualmente</span>
+      <span class="choice-desc">Compila i dati del libro a mano</span>
+    </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SCAN -->
+<div id="modal-scan" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2><img src="assets/icon/fotocamera.png" alt="" style="width:2rem;height:2rem;object-fit:contain;vertical-align:middle;margin-right:.4rem;">Scansiona codice</h2>
+
+    <!-- Scelta metodo: fotocamera o manuale -->
+    <div id="scan-method-choice" class="scan-method-choice">
+      <button class="scan-method-btn" id="scan-use-camera">
+        <img src="assets/icon/fotocamera.png" alt="Fotocamera" style="width:2rem;height:2rem;object-fit:contain;">
+        <span>Usa fotocamera</span>
+      </button>
+    </div>
+
+    <!-- Sezione fotocamera (nascosta di default) -->
+    <div id="scan-camera-section" class="hidden">
+      <video id="scanner-video" autoplay muted playsinline></video>
+      <button id="scan-capture-btn" class="btn-capture">📸 Scatta e leggi ISBN</button>
+      <canvas id="scan-canvas" style="display:none"></canvas>
+    </div>
+    <div class="scan-manual" style="margin-top:.6rem">
+      <span style="font-family:monospace;font-size:.85rem;color:var(--accent);white-space:nowrap">ISBN: <span id="scan-isbn-display">—</span></span>
+      <input type="text" id="scan-manual-isbn" placeholder="Inserisci ISBN…" maxlength="14">
+      <button id="scan-manual-btn">Cerca</button>
+    </div>
+    <p id="scan-error"></p>
+    <div id="scan-not-found" class="scan-not-found hidden">
+      <p class="scan-not-found-msg">Libro non trovato per questo ISBN.</p>
+      <button id="scan-add-manually-btn" class="btn-add-manually">✏️ Aggiungi manualmente</button>
+    </div>
+    <div id="scan-preview" class="scan-preview hidden">
+      <img class="preview-cover" src="" alt="">
+      <div class="preview-info">
+        <div class="preview-badge"></div>
+        <div class="preview-title"></div>
+        <div class="preview-author"></div>
+        <div class="preview-year"></div>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:.8rem">
+      <label style="font-size:.82rem;color:var(--text-muted);font-weight:600;">Serie (opzionale)</label>
+      <div style="display:flex;gap:.5rem">
+        <input type="text" id="scan-series-name" placeholder="es. Shadowhunters" style="flex:1;padding:.5rem .8rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body)">
+        <input type="number" id="scan-series-volume" placeholder="Vol." min="0" step="0.5" style="width:70px;padding:.5rem .8rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body)">
+      </div>
+    </div>
+
+    <div class="scan-options">
+      <div class="destination-choice">
+        <p class="destination-label">Dove vuoi aggiungere?</p>
+        <div class="destination-btns">
+          <button class="destination-btn" data-dest="library">Collezione</button>
+          <button class="destination-btn active" data-dest="wishlist"><img src="assets/icon/lista.png" alt="" style="width:1.2rem;height:1.2rem;object-fit:contain;vertical-align:middle;margin-right:.3rem;">Lista desideri</button>
+        </div>
+        <div id="library-options" class="library-options hidden">
+          <label style="font-size:.82rem;color:var(--text-muted);font-weight:600;">Stato:</label>
+          <select id="scan-status-select">
+            <option value="want_to_read">Da leggere</option>
+            <option value="reading">In lettura</option>
+            <option value="read">Letto</option>
+          </select>
+          <label style="font-size:.82rem;color:var(--text-muted);font-weight:600;">Scaffale:</label>
+          <select id="scan-shelf-select"><option value="">— Nessuno —</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="scan-cancel-btn" class="btn-cancel">Annulla</button>
+      <button id="scan-confirm-btn" class="btn-confirm">Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MANUAL -->
+<div id="modal-manual" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:460px">
+    <h2><img src="assets/icon/matita.png" alt="" style="width:2rem;height:2rem;object-fit:contain;vertical-align:middle;margin-right:.4rem;">Aggiungi manualmente</h2>
+    <div class="form-group"><label>Titolo *</label><input type="text" id="manual-title" placeholder="Titolo del libro"></div>
+    <div class="form-group"><label>Autore</label><input type="text" id="manual-author" placeholder="Nome autore"></div>
+    <div class="form-group"><label>ISBN (opzionale)</label><input type="text" id="manual-isbn" placeholder="Es. 9791257450113"></div>
+    <div class="form-group"><label>Editore</label><input type="text" id="manual-publisher" placeholder="Casa editrice"></div>
+    <div class="form-group"><label>Anno</label><input type="number" id="manual-year" placeholder="Es. 2023" min="1800" max="2099"></div>
+    <div class="form-group">
+  <label>Serie (opzionale)</label>
+      <div style="display:flex;gap:.5rem">
+        <input type="text" id="manual-series-name" placeholder="es. Shadowhunters" style="flex:1;padding:.5rem .8rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body)">
+        <input type="number" id="manual-series-volume" placeholder="Vol." min="0" step="0.5" style="width:70px;padding:.5rem .8rem;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body)">
+      </div>
+    </div>
+    <div class="scan-options">
+      <div class="destination-choice">
+        <p class="destination-label">Dove vuoi aggiungere?</p>
+        <div class="destination-btns">
+          <button class="destination-btn manual-dest-btn" data-dest="library">Collezione</button>
+          <button class="destination-btn manual-dest-btn active" data-dest="wishlist"><img src="assets/icon/lista.png" alt="" style="width:1.2rem;height:1.2rem;object-fit:contain;vertical-align:middle;margin-right:.3rem;">Lista desideri</button>
+        </div>
+        <div id="manual-library-options" class="library-options hidden">
+          <label style="font-size:.82rem;color:var(--text-muted);font-weight:600;">Stato:</label>
+          <select id="manual-status-select">
+            <option value="want_to_read">Da leggere</option>
+            <option value="reading">In lettura</option>
+            <option value="read">Letto</option>
+          </select>
+          <label style="font-size:.82rem;color:var(--text-muted);font-weight:600;">Scaffale:</label>
+          <select id="manual-shelf-select"><option value="">— Nessuno —</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="manual-cancel-btn" class="btn-cancel">Annulla</button>
+      <button id="manual-confirm-btn" class="btn-confirm">Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SHELF -->
+<div id="modal-shelf" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:360px">
+    <h2 id="shelf-modal-title">Nuovo scaffale</h2>
+    <div class="form-group">
+      <label for="shelf-name-input">Nome</label>
+      <input type="text" id="shelf-name-input" placeholder="Es. Manga, Fantasy, Saggi…" maxlength="100">
+    </div>
+    <div class="modal-actions">
+      <button id="shelf-delete-btn" class="btn-danger-sm hidden">🗑 Elimina</button>
+      <button id="shelf-cancel-btn" class="btn-cancel">Annulla</button>
+      <button id="shelf-save-btn" class="btn-confirm">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REVIEW (standalone, usato da BookPresenter) -->
+<div id="modal-review" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:440px">
+    <h2>⭐ Recensione</h2>
+    <p id="review-book-title" style="color:var(--text-muted);margin-bottom:.5rem;font-size:.9rem;"></p>
+    <div class="star-rating">
+      <span class="star" data-value="1">★</span>
+      <span class="star" data-value="2">★</span>
+      <span class="star" data-value="3">★</span>
+      <span class="star" data-value="4">★</span>
+      <span class="star" data-value="5">★</span>
+    </div>
+    <textarea id="review-text" placeholder="Scrivi la tua recensione (opzionale)…"></textarea>
+    <div class="modal-actions">
+      <button id="review-delete-btn" class="btn-danger-sm">Elimina</button>
+      <button id="review-cancel-btn" class="btn-cancel">Annulla</button>
+      <button id="review-save-btn" class="btn-confirm">Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menu hamburger -->
+<div class="hamburger-wrap hidden" id="hamburger-wrap">
+  <button id="hamburger-btn" class="hamburger-btn" title="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div id="hamburger-menu" class="hamburger-menu hidden">
+    <button class="hamburger-item" id="menu-theme">Cambia tema</button>
+    <button class="hamburger-item" id="menu-reorder">↕ Riordina</button>
+  </div>
+</div>
+
+<button id="exit-drag-btn" class="exit-drag-btn hidden" title="Fine riordinamento">
+  ✓ Fine riordino
+</button>
+
+<!-- MODAL: RIORDINA -->
+<div id="modal-reorder" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:320px">
+    <h2>↕ Riordina libri</h2>
+    <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1.2rem;">
+      Ordina i libri dello scaffale corrente per:
+    </p>
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      <button id="sort-by-title" class="btn-confirm" style="width:100%">Titolo</button>
+      <button id="sort-by-author" class="btn-confirm" style="width:100%">Autore</button>
+      <button id="sort-by-added-asc" class="btn-confirm" style="width:100%">Prima aggiunta</button>
+      <button id="sort-by-added-desc" class="btn-confirm" style="width:100%">Ultima aggiunta</button>
+      <button id="sort-by-custom" class="btn-confirm" style="width:100%">Personalizzato</button>
+    </div>
+    <div class="modal-actions">
+      <button id="reorder-cancel-btn" class="btn-cancel">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<button id="scroll-top-btn" class="scroll-top-btn" title="Torna su">↑</button>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav hidden" id="bottom-nav">
+  <button class="bottom-nav-item" id="bnav-library" data-section="library">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Collezione</span>
+  </button>
+  <button class="bottom-nav-item" id="bnav-wishlist" data-section="wishlist">
+    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    <span>Desideri</span>
+  </button>
+  <button class="bottom-nav-item bottom-nav-item--add" id="bnav-add">
+    <div class="bottom-nav-bubble">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </div>
+    <span>Aggiungi</span>
+  </button>
+  <a href="profile.html" class="bottom-nav-item bottom-nav-item--profile" id="nav-username" title="Profilo">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profilo</span>
+  </a>
+  <button class="bottom-nav-item" id="bnav-logout">
+    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <span>Esci</span>
+  </button>
+</nav>
+
+<script src="js/models/BaseModel.js"></script>
+<script src="js/models/ApiModel.js"></script>
+<script src="js/presenters/BasePresenter.js"></script>
+<script src="js/presenters/AuthPresenter.js"></script>
+<script src="js/presenters/BookPresenter.js"></script>
+<script src="js/presenters/ShelfPresenter.js"></script>
+<script src="js/presenters/BookDetailPresenter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script src="js/utils/MarkdownParser.js"></script>
+<script src="js/utils/MarkdownEditor.js"></script>
+<script src="js/views/BaseView.js"></script>
+<script src="js/views/AppView.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => new AppView().init());
+</script>
+<script>
+  document.getElementById('bnav-library')
+    ?.addEventListener('click', () => document.querySelector('.nav-section[data-section="library"]')?.click());
+  document.getElementById('bnav-wishlist')
+    ?.addEventListener('click', () => document.querySelector('.nav-section[data-section="wishlist"]')?.click());
+  document.getElementById('bnav-add')
+    ?.addEventListener('click', () => document.getElementById('btn-scan')?.click());
+  document.getElementById('bnav-logout')
+    ?.addEventListener('click', () => document.getElementById('btn-logout')?.click());
+
+  const bnavItems = {
+    library:  document.getElementById('bnav-library'),
+    wishlist: document.getElementById('bnav-wishlist'),
+  };
+  document.querySelectorAll('.nav-section').forEach(btn => {
+    btn.addEventListener('click', () => {
+      Object.values(bnavItems).forEach(el => el?.classList.remove('active'));
+      bnavItems[btn.dataset.section]?.classList.add('active');
+    });
+  });
+  bnavItems.library?.classList.add('active');
+</script>
+</body>
+</html>

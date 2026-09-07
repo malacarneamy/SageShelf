@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it" class="profile-page-html">
+<head>
+    <script>
+        const t = localStorage.getItem('sageshelf-theme');
+        if (t === 'night') document.documentElement.setAttribute('data-theme', 'night');
+    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profilo — SageShelf</title>
+  <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/books.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body class="profile-page-body">
+
+<nav class="navbar">
+  <a class="navbar-brand" href="index.html">
+    <img src="assets/img/logo.jpg" alt="Logo" class="nav-logo"> SageShelf
+  </a>
+  <div class="navbar-actions">
+    <button id="btn-theme" title="Cambia tema" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+        <img src="assets/icon/tema.png" alt="Tema" style="width:36px;height:36px;object-fit:contain;">
+    </button>
+    <div class="nav-profile" id="nav-username" title="Profilo">👤</div>
+    <button id="btn-logout" class="btn-nav-ghost">Esci</button>
+  </div>
+</nav>
+
+<main class="main-content">
+    <div class="profile-page">
+    <img src="assets/img/profilo.png" alt="Profilo" class="header-logo">
+
+    <!-- Avatar centrato sopra la card -->
+    <div class="profile-avatar-section">
+        <div class="profile-avatar-wrap">
+        <img id="profile-avatar-img" class="profile-avatar-img hidden" src="" alt="Avatar">
+        <div id="profile-avatar-placeholder" class="profile-avatar-placeholder">👤</div>
+        <button id="profile-remove-avatar" class="profile-avatar-remove" style="display:none" title="Rimuovi immagine">×</button>
+        <label class="profile-avatar-overlay" title="Cambia immagine">
+            📷
+            <input type="file" id="profile-avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+        </label>
+        </div>
+    </div>
+    <p class="profile-version">made by Godzillalilla · version: 1.0.13</p>
+
+    <!-- Card unica -->
+    <div class="profile-card">
+
+        <!-- Username -->
+        <div class="profile-field">
+        <label class="profile-field-label">Username</label>
+        <div class="profile-field-row">
+            <input type="text" id="profile-username" class="profile-field-input" placeholder="Il tuo nome">
+            <button id="profile-save-username" class="btn-confirm profile-field-btn hidden">Salva</button>
+        </div>
+        </div>
+
+        <hr class="profile-divider">
+
+        <!-- Email: sola visualizzazione — l'accesso avviene via codice OTP
+             inviato a questo indirizzo, quindi non è modificabile da qui -->
+        <div class="profile-field">
+        <label class="profile-field-label">Email</label>
+        <div class="profile-field-row">
+            <input type="email" id="profile-email" class="profile-field-input" readonly>
+        </div>
+        </div>
+
+        <hr class="profile-divider">
+
+        <!-- Azioni -->
+        <div class="profile-actions">
+        <button id="profile-delete-account-btn" class="btn-danger-sm">🗑 Elimina account</button>
+        </div>
+
+    </div>
+
+    <!-- Pannello elimina account (nascosto di default) -->
+    <div id="profile-delete-panel" class="profile-card hidden" style="border-color: var(--red)">
+        <h2 class="profile-card-title">🗑 Elimina account</h2>
+        <p class="profile-danger-text">Questa azione è irreversibile. Tutti i tuoi libri, scaffali e recensioni verranno eliminati.</p>
+        <div class="profile-actions">
+        <button id="profile-cancel-delete" class="btn-cancel">Annulla</button>
+        <button id="profile-delete-account" class="btn-danger-sm">Elimina definitivamente</button>
+        </div>
+    </div>
+
+    </div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/models/BaseModel.js"></script>
+<script src="js/models/ApiModel.js"></script>
+<script src="js/presenters/BasePresenter.js"></script>
+<script src="js/presenters/AuthPresenter.js"></script>
+<script src="js/views/BaseView.js"></script>
+<script src="js/views/ProfileView.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => new ProfileView().init());
+</script>
+</body>
+</html>
