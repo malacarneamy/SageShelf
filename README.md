@@ -60,8 +60,6 @@ bookshelf/
     │   │   ├── logo.jpg
     │   │   ├── profilo.png
     │   │   └── lista_desideri.png
-    │   ├── avatars/                # Immagini profilo utente
-    │   ├── covers/                 # Copertine caricate manualmente
     │   ├── no-cover-black.svg
     │   └── no-cover.svg
     ├── css/
