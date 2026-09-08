@@ -34,6 +34,9 @@
   </div>
 </nav>
 
+<div class="ptr-indicator" id="ptr-indicator">
+  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+</div>
 <main class="main-content">
     <div class="profile-page">
     <img src="assets/img/profilo.png" alt="Profilo" class="header-logo">
@@ -50,7 +53,7 @@
         </label>
         </div>
     </div>
-    <p class="profile-version">made by Godzillalilla · version: 1.0.3</p>
+    <p class="profile-version">made by Godzillalilla · version: 1.0.4</p>
 
     <!-- Card unica -->
     <div class="profile-card">
@@ -121,8 +124,16 @@
 <script src="js/presenters/AuthPresenter.js"></script>
 <script src="js/views/BaseView.js"></script>
 <script src="js/views/ProfileView.js"></script>
+<script src="js/utils/PullToRefresh.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', () => new ProfileView().init());
+  document.addEventListener('DOMContentLoaded', () => {
+    new ProfileView().init();
+    new PullToRefresh({
+      container: document.querySelector('.main-content'),
+      indicator: document.getElementById('ptr-indicator'),
+      onRefresh: () => location.reload(),
+    });
+  });
   document.getElementById('bnav-logout-mobile')?.addEventListener('click', async () => {
     await api.logout();
     window.location.href = '/';

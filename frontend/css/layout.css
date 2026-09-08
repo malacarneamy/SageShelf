@@ -247,3 +247,42 @@
   /* Spazio ultima riga dal fondo*/
   .main-content { padding-bottom: calc(64px + 1.5rem); }
 }
+/* ── Pull-to-refresh (mobile) ──────────────────────────────── */
+.ptr-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50px);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sand);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+.ptr-indicator.visible { opacity: 1; }
+.ptr-indicator svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--moss);
+  stroke-width: 2;
+  fill: none;
+  transition: stroke var(--transition), transform var(--transition);
+}
+.ptr-indicator.ptr-ready svg {
+  stroke: var(--forest);
+  transform: rotate(180deg);
+}
+.ptr-indicator.spinning svg {
+  animation: ptr-spin 0.8s linear infinite;
+  stroke: var(--forest);
+}
+@keyframes ptr-spin {
+  to { transform: rotate(360deg); }
+}

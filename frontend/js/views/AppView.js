@@ -51,6 +51,16 @@ class AppView extends BaseView {
         this.shelfPresenter.load();
         this._loadCurrentView();
 
+        // Trascina verso il basso per aggiornare (mobile)
+        if (!this._ptrBound) {
+            this._ptrBound = true;
+            new PullToRefresh({
+                container: document.querySelector('.main-content'),
+                indicator: document.getElementById('ptr-indicator'),
+                onRefresh: () => this._loadCurrentView(),
+            });
+        }
+
         // Pulsante torna su — registrato dopo che main-content è visibile
         const scrollBtn  = document.getElementById('scroll-top-btn');
         const scrollable = document.querySelector('.main-content');

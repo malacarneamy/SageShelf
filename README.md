@@ -11,7 +11,7 @@ Applicazione web per gestire la propria collezione di libri, strutturata secondo
 | Frontend  | HTML5, CSS3 (custom), JavaScript ES2022 (no framework)            |
 | Backend   | PHP 8.1+                                                          |
 | Database  | MySQL 8+ (o MariaDB 10.6+)                                        |
-| Auth      | Passwordless via codice OTP inviato per email (Resend API)        |
+| Auth      | Passwordless via codice OTP inviato per email (SMTP + PHPMailer)  |
 | Scanner   | Tesseract.js (OCR ISBN via webcam)                                |
 | Book API  | Google Books → Open Library (lookup ISBN, cascata automatica)     |
 | Markdown  | marked.js + DOMPurify (recensioni e note personali)               |
@@ -25,10 +25,16 @@ bookshelf/
 ├── .gitignore
 ├── backend/
 │   ├── .env                        # Segreti locali (NON committato)
+│   ├── .htaccess                   # Instrada tutte le richieste verso views/api.php
 │   ├── config/
-│   │   ├── bootstrap.php           # Autoload, sessione, CORS, helpers HTTP, invio email
+│   │   ├── bootstrap.php           # Autoload, env(), sessione, CORS, helpers HTTP, invio email
 │   │   ├── Database.php            # Singleton PDO (config da variabili d'ambiente)
 │   │   └── schema.sql              # Schema DB completo (installazione fresh)
+│   ├── lib/
+│   │   └── PHPMailer/              # Libreria PHPMailer (invio email via SMTP)
+│   │       ├── PHPMailer.php
+│   │       ├── SMTP.php
+│   │       └── Exception.php
 │   ├── models/                     # ← MODEL: accesso dati puro
 │   │   ├── BookDetailModel.php
 │   │   ├── BookModel.php
@@ -41,11 +47,11 @@ bookshelf/
 │   │   ├── BookDetailPresenter.php
 │   │   ├── BookPresenter.php
 │   │   └── ShelfPresenter.php
-│   ├── views/
-│   │   └── api.php                 # ← VIEW: dispatcher HTTP (thin layer)
-│   └── .htaccess
+│   └── views/
+│       └── api.php                 # ← VIEW: dispatcher HTTP (thin layer)
 │
 └── frontend/
+    ├── .htaccess                   # Riscrive /profile → profile.html (URL puliti)
     ├── assets/
     │   ├── icon/
     │   │   ├── cestino.png
@@ -60,6 +66,8 @@ bookshelf/
     │   │   ├── logo.jpg
     │   │   ├── profilo.png
     │   │   └── lista_desideri.png
+    │   ├── avatars/                # Immagini profilo utente
+    │   ├── covers/                 # Copertine caricate manualmente
     │   ├── no-cover-black.svg
     │   └── no-cover.svg
     ├── css/
@@ -67,7 +75,7 @@ bookshelf/
     │   ├── base.css
     │   ├── book-detail.css
     │   ├── books.css
-    │   ├── layout.css
+    │   ├── layout.css              # Include anche lo stile dell'indicatore pull-to-refresh
     │   ├── modals.css
     │   ├── navbar.css
     │   └── profile.css
@@ -83,7 +91,8 @@ bookshelf/
     │   │   └── ShelfPresenter.js   # ← estende BasePresenter
     │   ├── utils/
     │   │   ├── MarkdownEditor.js   # Auto-pairing, liste automatiche
-    │   │   └── MarkdownParser.js   # marked.js + DOMPurify
+    │   │   ├── MarkdownParser.js   # marked.js + DOMPurify
+    │   │   └── PullToRefresh.js    # Trascina per aggiornare (mobile, touch events)
     │   └── views/
     │       ├── AppView.js          # ← estende BaseView, rendering + eventi DOM (include il modal dettaglio libro)
     │       ├── BaseView.js         # ← VIEW BASE: toast, loading, modal, helpers
@@ -97,10 +106,10 @@ bookshelf/
 ## Setup
 
 ### 1. Requisiti
-- PHP 8.1+
+- PHP 8.1+ con estensioni `pdo_mysql` e `curl` abilitate
 - MySQL 8+ o MariaDB 10.6+
 - Apache con `mod_rewrite` abilitato (XAMPP consigliato per sviluppo locale)
-- Un account [Resend](https://resend.com) (gratuito) per l'invio dei codici OTP via email
+- Una casella email raggiungibile via **SMTP** (con host/porta/credenziali) per l'invio dei codici OTP — va bene qualunque provider: una casella del proprio hosting, Gmail con password per app, ecc.
 
 ### 2. Database
 Apri `http://localhost/phpmyadmin`, crea il database `bookshelf_db` e importa lo schema:
@@ -120,15 +129,21 @@ CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
-CORS_ALLOWED_ORIGINS=https://sageshelf.great-site.net
+CORS_ALLOWED_ORIGINS=https://tuodominio.it
 
-MAIL_FROM=onboarding@resend.dev
+# Email OTP via SMTP
+SMTP_HOST=
+SMTP_PORT=465
+SMTP_SECURE=ssl
+SMTP_USER=
+SMTP_PASS=
+
+MAIL_FROM=no-reply@tuodominio.it
 MAIL_FROM_NAME=SageShelf
-MAIL_API_KEY=
 ```
-`backend/.env` **non va mai committato** su git — contiene i segreti reali (password DB, API key). Solo `.env.example` (senza valori) va versionato.
+`backend/.env` **non va mai committato** su git — contiene i segreti reali (password DB, credenziali SMTP). Solo `.env.example` (senza valori) va versionato.
 
-> In fase di sviluppo si può usare il dominio di test `onboarding@resend.dev` come `MAIL_FROM`, che funziona subito ma invia solo all'email con cui ti sei registrato su Resend. Per un uso reale con più utenti serve verificare un dominio proprio su Resend.
+> `bootstrap.php` legge `.env` tramite una funzione `env()` interna (non solo `putenv()`/`getenv()`), perché alcuni hosting condivisi disabilitano `putenv()` per sicurezza. Funziona comunque ovunque, anche dove `putenv()` è regolarmente abilitato.
 
 ### 4. Deploy locale (XAMPP)
 Copia l'intera cartella `bookshelf/` in `htdocs/`:
@@ -145,6 +160,9 @@ Assicurati che `backend/config/bootstrap.php` abbia:
 'secure' => true,
 ```
 
+### 6. Note per hosting condivisi (Linux)
+Su filesystem case-sensitive, il nome dei file PHP deve corrispondere esattamente (maiuscole comprese) al nome della classe che contengono — es. `Database.php`, non `database.php`, altrimenti l'autoloader in `bootstrap.php` non trova la classe. Verificare anche che l'hosting non blocchi le connessioni SMTP in uscita (porta 465/587).
+
 ---
 
 ## Autenticazione
@@ -152,9 +170,11 @@ Assicurati che `backend/config/bootstrap.php` abbia:
 SageShelf usa un login **passwordless**: nessuna password da ricordare o da violare.
 
 1. L'utente inserisce la propria email (login) o email + username (registrazione)
-2. Il backend genera un codice a 6 cifre, lo salva hashato in `login_codes` con scadenza a 10 minuti, e lo invia via email tramite Resend
+2. Il backend genera un codice a 6 cifre, lo salva hashato in `login_codes` con scadenza a 10 minuti, e lo invia via email tramite SMTP (PHPMailer)
 3. L'utente inserisce il codice ricevuto
 4. Se corretto e non scaduto, viene creata la sessione (e, se è la prima volta, l'utente viene registrato)
+
+Se l'email inserita in fase di login non corrisponde a nessun account esistente, il sistema risponde esplicitamente invitando l'utente a registrarsi (nessun codice viene inviato in quel caso).
 
 Limiti applicati lato server (in `LoginCodeModel`):
 - un nuovo codice non può essere richiesto più di una volta ogni 60 secondi per la stessa email
@@ -173,7 +193,7 @@ La sessione, una volta autenticato, dura 30 giorni e si rinnova automaticamente 
 | **Profilo utente**           | Modifica username, avatar; eliminazione account                            |
 | **Libreria**                 | Visualizza tutti i libri con stato di lettura                              |
 | **Lista desideri**           | Sezione separata per i libri con `is_wishlist = true`                      |
-| **Scaffali dinamici**        | Creati dall'utente, navigabili con frecce laterali sticky                  |
+| **Scaffali dinamici**        | Creati dall'utente dal menu (☰), navigabili con frecce laterali sticky     |
 | **Scanner barcode**          | Tesseract.js OCR via webcam, fallback ISBN manuale                         |
 | **Lookup ISBN**              | Google Books → Open Library (cascata automatica con cover fallback)        |
 | **Inserimento manuale**      | Form con titolo, autore, editore, anno, ISBN                               |
@@ -190,6 +210,9 @@ La sessione, una volta autenticato, dura 30 giorni e si rinnova automaticamente 
 | **Statistiche**              | Counter per stato in libreria; solo totale in lista desideri               |
 | **Sposta libri**             | Da libreria a lista desideri e viceversa dal popup dettaglio               |
 | **Duplicate check**          | Errore se si tenta di aggiungere un libro già presente                     |
+| **Menu (☰)**                 | Nuovo scaffale, cambio tema, riordino libri — tutto in un unico menu       |
+| **Pull-to-refresh**          | Trascina verso il basso da mobile per aggiornare la vista corrente         |
+| **Navigazione mobile**       | Bottom nav dedicata anche nella pagina profilo, URL puliti (`/profile`)    |
 
 ---
 
@@ -219,8 +242,8 @@ BasePresenter
 └── ShelfPresenter            (CRUD scaffali)
 
 BaseView  (_esc, _formatLabel, _durationText, toast, modal)
-├── AppView                   (rendering DOM, binding eventi, modal dettaglio libro)
-└── ProfileView               (pagina profilo utente)
+├── AppView                   (rendering DOM, binding eventi, modal dettaglio libro, pull-to-refresh)
+└── ProfileView               (pagina profilo utente, pull-to-refresh)
 ```
 
 ### Ordine di caricamento in index.html
@@ -236,6 +259,7 @@ BaseView  (_esc, _formatLabel, _durationText, toast, modal)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
 <script src="js/utils/MarkdownParser.js"></script>
 <script src="js/utils/MarkdownEditor.js"></script>
+<script src="js/utils/PullToRefresh.js"></script>
 <script src="js/views/BaseView.js"></script>
 <script src="js/views/AppView.js"></script>
 ```
@@ -295,7 +319,7 @@ ALTER TABLE users DROP COLUMN security_answer;
 
 ### Libri
 | Metodo | Path                    | Descrizione                           |
-|--------|-------------------------|---------------------------------------|
+|--------|-------------------------|----------------------------------------|
 | GET    | /books                  | Lista (libreria o wishlist)           |
 | GET    | /books?shelf_id=X       | Filtro per scaffale                   |
 | GET    | /books?wishlist=1       | Solo lista desideri                   |
@@ -304,7 +328,7 @@ ALTER TABLE users DROP COLUMN security_answer;
 | GET    | /books/search?q=X&all=1 | Ricerca globale (libreria + wishlist)  |
 | POST   | /books                  | Aggiungi libro                        |
 | PUT    | /books/{id}             | Aggiorna stato/scaffale/wishlist      |
-| DELETE | /books/{id}             | Rimuovi dalla collezione              |
+| DELETE | /books/{id}             | Rimuovi dalla collezione (richiede l'id di `user_books`, non del catalogo) |
 | GET    | /books/{id}/show        | Dettaglio singolo user_book           |
 | GET    | /books/{id}/details     | Dettagli personali libro              |
 | PUT    | /books/{id}/details     | Salva dettagli personali              |
