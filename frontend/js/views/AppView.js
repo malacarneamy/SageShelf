@@ -505,7 +505,7 @@ class AppView extends BaseView {
     _renderDetailModal(book, details) {
         const isWishlist = this._activeSection === 'wishlist';
         const userBookId = book.user_book_id ?? book.id;  // user_books.id → per saveDetails
-        const bookId     = book.id;                        // books.id      → per review/updateBook
+        const bookId     = book.id;                        // books.id → solo per riferimento nel DOM (data-book-id)
         const rating     = book.rating ?? 0;
 
         const isRead  = book.status === 'read';
@@ -779,7 +779,7 @@ class AppView extends BaseView {
             const fd = new FormData();
             fd.append('cover', file);
             try {
-                const res = await api.uploadCover(bookId, fd);
+                const res = await api.uploadCover(userBookId, fd);
                 if (res?.data?.cover_url) {
                     modal.querySelector('.bd-cover').src = res.data.cover_url;
                     this.showSuccess('Copertina aggiornata!');
@@ -953,13 +953,13 @@ class AppView extends BaseView {
 
         // ── Sposta ────────────────────────────────────────────
         modal.querySelector('#detail-move-wishlist')?.addEventListener('click', async () => {
-            await api.updateBook(bookId, { is_wishlist: true });
+            await api.updateBook(userBookId, { is_wishlist: true });
             this._closeModal('modal-book-detail');
             this.showSuccess('Spostato in lista desideri!');
             this._loadCurrentView();
         });
         modal.querySelector('#detail-move-library')?.addEventListener('click', async () => {
-            await api.updateBook(bookId, { is_wishlist: false, status: 'want_to_read' });
+            await api.updateBook(userBookId, { is_wishlist: false, status: 'want_to_read' });
             this._closeModal('modal-book-detail');
             this.showSuccess('Spostato in Collezione!');
             this._loadCurrentView();
@@ -1006,15 +1006,15 @@ class AppView extends BaseView {
                 };
                 await this.bookDetailPresenter.saveDetails(userBookId, detailPayload);
 
-                // 2. Recensione (usa bookId = books.id)
+                // 2. Recensione (l'endpoint vuole user_books.id, risolve internamente books.id)
                 const reviewText = modal.querySelector('#bd-review-text')?.value?.trim() || null;
                 if (currentRating > 0 || reviewText) {
-                    await api.upsertReview(bookId, { rating: currentRating, review_text: reviewText });
+                    await api.upsertReview(userBookId, { rating: currentRating, review_text: reviewText });
                 } else {
-                    await api.deleteReview(bookId);
+                    await api.deleteReview(userBookId);
                 }
 
-                // 3. Stato / scaffale — usa bookId (books.id) per updateBook
+                // 3. Stato / scaffale — l'endpoint vuole user_books.id
                 const isWishlist = this._activeSection === 'wishlist';
                 if (!isWishlist) {
                     const status  = modal.querySelector('.bd-status-btn.active')?.dataset.status;
@@ -1022,7 +1022,7 @@ class AppView extends BaseView {
                     const updates = {};
                     if (status  && status   !== book.status)     updates.status   = status;
                     if (shelfId !== String(book.shelf_id ?? '')) updates.shelf_id = shelfId;
-                    if (Object.keys(updates).length) await api.updateBook(bookId, updates);
+                    if (Object.keys(updates).length) await api.updateBook(userBookId, updates);
                 }
 
                 // 4. Autore — aggiorna books.author se modificato
