@@ -50,7 +50,7 @@
         </label>
         </div>
     </div>
-    <p class="profile-version">made by Godzillalilla · version: 1.0</p>
+    <p class="profile-version">made by Godzillalilla · version: 1.0.1</p>
 
     <!-- Card unica -->
     <div class="profile-card">
@@ -97,6 +97,22 @@
     </div>
 </main>
 
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav" id="bottom-nav">
+  <a href="/" class="bottom-nav-item">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Collezione</span>
+  </a>
+  <span class="bottom-nav-item bottom-nav-item--profile active" title="Profilo">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Profilo</span>
+  </span>
+  <button class="bottom-nav-item" id="bnav-logout-mobile">
+    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <span>Esci</span>
+  </button>
+</nav>
+
 <div id="toast" class="toast"></div>
 
 <script src="js/models/BaseModel.js"></script>
@@ -107,6 +123,10 @@
 <script src="js/views/ProfileView.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => new ProfileView().init());
+  document.getElementById('bnav-logout-mobile')?.addEventListener('click', async () => {
+    await api.logout();
+    window.location.href = '/';
+  });
 </script>
 </body>
 </html>
