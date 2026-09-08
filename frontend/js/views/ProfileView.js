@@ -27,7 +27,7 @@ class ProfileView extends BaseView {
 
         document.getElementById('btn-logout')?.addEventListener('click', async () => {
             await api.logout();
-            window.location.href = 'index.html';
+            window.location.href = '/';
         });
     }
 
@@ -105,7 +105,7 @@ class ProfileView extends BaseView {
             try {
                 await api.deleteAccount();
                 this.showSuccess('Account eliminato');
-                setTimeout(() => window.location.href = 'index.html', 1200);
+                setTimeout(() => window.location.href = '/', 1200);
             } catch (e) { this.showError(e.message); }
         });
 
@@ -139,7 +139,7 @@ class ProfileView extends BaseView {
     }
 
     _redirectLogin() {
-        window.location.href = 'index.html';
+        window.location.href = '/';
     }
 }
 
