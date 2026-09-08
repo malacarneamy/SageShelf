@@ -159,7 +159,7 @@ class AppView extends BaseView {
                     data-shelf-index="${i + 1}" data-shelf-id="${s.id}" data-shelf-name="${this._esc(s.name)}">
                 ${this._esc(s.name)}
             </button>`).join('');
-        const addPill = `<button class="shelf-pill shelf-pill--add" id="btn-add-shelf">＋ Scaffale</button>`;
+        const addPill = ``;
 
         track.innerHTML = allPill + pills + addPill;
         this._updateArrows(total);
@@ -177,7 +177,6 @@ class AppView extends BaseView {
             });
         });
 
-        document.getElementById('btn-add-shelf').addEventListener('click', () => this._openShelfModal(null, ''));
         this._updateShelfCurrentName();
     }
 
@@ -1666,6 +1665,11 @@ class AppView extends BaseView {
             hamburgerMenu.classList.toggle('hidden');
         });
         document.addEventListener('click', () => hamburgerMenu?.classList.add('hidden'));
+        document.getElementById('menu-add-shelf')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hamburgerMenu.classList.add('hidden');
+            this._openShelfModal(null, '');
+        });
         document.getElementById('menu-theme')?.addEventListener('click', (e) => {
             e.stopPropagation();
             const current = localStorage.getItem('sageshelf-theme');
