@@ -48,9 +48,7 @@ class AuthPresenter {
             respondError('Email non valida');
 
         if (!$this->model->findByEmail($email)) {
-            // Messaggio volutamente generico: non riveliamo se l'email esiste
-            // o no, per non far enumerare account registrati.
-            respondError('Se l\'indirizzo è registrato, riceverai un codice a breve.', 200);
+            respondError('Nessun account trovato con questa email. Registrati per crearne uno.', 200);
         }
 
         if ($this->codes->wasRequestedRecently($email))
