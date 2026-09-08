@@ -959,7 +959,7 @@ class AppView extends BaseView {
         // ── Rimuovi ───────────────────────────────────────────
         modal.querySelector('#detail-remove-btn').addEventListener('click', async () => {
             if (!confirm('Rimuovere questo libro dalla collezione?')) return;
-            await this.bookPresenter.removeBook(bookId);
+            await this.bookPresenter.removeBook(userBookId);
             this._closeModal('modal-book-detail');
         });
 
