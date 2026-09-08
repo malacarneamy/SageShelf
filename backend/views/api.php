@@ -131,5 +131,5 @@ try {
     };
 } catch (Throwable $e) {
     error_log('FATAL: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    respondError('Errore interno del server', 500);
+    respondError($e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine(), 500);
 }
