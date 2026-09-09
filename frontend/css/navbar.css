@@ -3,7 +3,9 @@
    ============================================================ */
 
 /* ── App screen come colonna flex ──────────────────────────── */
-#app-screen { height: 100vh; display: flex !important; flex-direction: column; overflow: hidden; }
+#app-screen {
+  height: 100vh; display: flex !important; flex-direction: column; overflow: hidden;
+}
 
 /* ── Navbar ────────────────────────────────────────────────── */
 .navbar {

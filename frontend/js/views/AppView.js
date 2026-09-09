@@ -253,7 +253,7 @@ class AppView extends BaseView {
         document.getElementById('scan-error').textContent = '';
         const p = document.getElementById('scan-preview');
         p.classList.remove('hidden');
-        p.querySelector('.preview-cover').src         = book.cover_url || 'assets/img/no-cover.svg';
+        p.querySelector('.preview-cover').src         = book.cover_url || 'assets/img/no-cover.jpg';
         p.querySelector('.preview-title').textContent  = book.title || 'Titolo sconosciuto';
         p.querySelector('.preview-author').textContent = book.author || 'Autore sconosciuto';
         p.querySelector('.preview-year').textContent   = book.published_year || '';
@@ -449,7 +449,7 @@ class AppView extends BaseView {
             is_wishlist:    b.is_wishlist
         }).replace(/'/g, "&#39;")}'>
             <div class="book-cover-wrap">
-                <img class="book-cover" src="${b.cover_url || (document.documentElement.getAttribute('data-theme') === 'night' ? 'assets/img/no-cover-black.svg' : 'assets/img/no-cover.svg')}"
+                <img class="book-cover" src="${b.cover_url || (document.documentElement.getAttribute('data-theme') === 'night' ? 'assets/img/no-cover-black.jpg' : 'assets/img/no-cover.jpg')}"
                     alt="${this._esc(b.title)}" loading="lazy">
             </div>
             <div class="book-info">
@@ -533,9 +533,9 @@ class AppView extends BaseView {
             <div class="bd-header">
                 <div class="bd-cover-wrap">
                     <img class="bd-cover"
-                        src="${book.cover_url || (document.documentElement.getAttribute('data-theme') === 'night' ? 'assets/img/no-cover-black.svg' : 'assets/img/no-cover.svg')}"
+                        src="${book.cover_url || (document.documentElement.getAttribute('data-theme') === 'night' ? 'assets/img/no-cover-black.jpg' : 'assets/img/no-cover.jpg')}"
                         alt="${this._esc(book.title)}"
-                        onerror="this.src='assets/img/no-cover.svg'">
+                        onerror="this.src='assets/img/no-cover.jpg'">
                     <span class="bd-status-badge bd-status-${book.status ?? 'want_to_read'}">
                         ${STATUS_LABELS[book.status] ?? ''}
                     </span>
@@ -794,7 +794,7 @@ class AppView extends BaseView {
             if (!confirm('Rimuovere la copertina?')) return;
             try {
                 await api.updateBook(userBookId, { cover_url: null });
-                modal.querySelector('.bd-cover').src = 'assets/img/no-cover.svg';
+                modal.querySelector('.bd-cover').src = 'assets/img/no-cover.jpg';
                 modal.querySelector('#bd-cover-remove-btn')?.remove();
                 this.showSuccess('Copertina rimossa!');
             } catch {
@@ -1325,7 +1325,7 @@ class AppView extends BaseView {
             }).replace(/'/g, "&#39;")}'>
                 <div class="book-cover-wrap">
                     <img class="book-cover"
-                         src="${b.cover_url || 'assets/img/no-cover.svg'}"
+                         src="${b.cover_url || 'assets/img/no-cover.jpg'}"
                          alt="${this._esc(b.title)}" loading="lazy">
                 </div>
                 <div class="book-info">
@@ -1727,8 +1727,8 @@ class AppView extends BaseView {
         localStorage.setItem('sageshelf-theme', theme);
         // Aggiorna le copertine mancanti
         const noCover = theme === 'night'
-            ? 'assets/img/no-cover-black.svg'
-            : 'assets/img/no-cover.svg';
+            ? 'assets/img/no-cover-black.jpg'
+            : 'assets/img/no-cover.jpg';
         document.querySelectorAll('.book-cover, .bd-cover').forEach(img => {
             if (img.src.includes('no-cover')) img.src = noCover;
         });

@@ -47,7 +47,7 @@
 .book-search-badge { font-size: .7rem; font-weight: 500; color: var(--text-muted); margin: 3px 0 0; }
 
 /* ── Stato griglia vuota ───────────────────────────────────── */
-.empty-state { grid-column: 1/-1; text-align: center; padding: 5rem 2rem; color: var(--text-muted); }
+.empty-state { grid-column: 1/-1; text-align: center; padding: 2.5rem 2rem; color: var(--text-muted); }
 .empty-icon  { font-size: 4rem; margin-bottom: 1rem; }
 
 /* ── Bottone "Sposta" nella scheda libro ───────────────────── */
@@ -98,4 +98,8 @@
 
   /* Nascondi frecce laterali su mobile */
   .carousel-arrow--side { display: none; }
+
+  /* Stato vuoto più compatto: evita scroll inutile quando non c'è nulla da mostrare */
+  .empty-state { padding: 1.5rem 1rem; }
+  .empty-img   { width: 160px; margin-bottom: .5rem; }
 }
