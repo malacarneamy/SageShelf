@@ -38,16 +38,39 @@
 
 /* ── Contenitore modal ─────────────────────────────────────── */
 .bd-modal {
-  background: var(--bd-surface);
-  border: 1px solid var(--bd-border);
+  background-image: url('../assets/img/dettaglio-chiaro.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border-radius: var(--bd-radius);
   box-shadow: 0 12px 48px rgba(105, 114, 84, 0.2);
-  width: 100%; max-width: 620px;
+  width: 100%; max-width: 340px;
+  aspect-ratio: 1352 / 1920;
   max-height: calc(100vh - 40px);
   display: flex; flex-direction: column; /* corpo scorre, azioni fisse in basso */
   overflow: hidden; position: relative;
   animation: bdSlideIn .26s cubic-bezier(.22,1,.36,1) both;
 }
+[data-theme="night"] .bd-modal {
+  background-image: url('../assets/img/dettaglio-scuro.jpg');
+  /* Un unico colore per tutto il testo nel tema notte: niente più mix
+     di toni diversi (alcuni quasi invisibili) — solo #E0A94F ovunque. */
+  --bd-text:        #E0A94F;
+  --bd-muted:       #E0A94F;
+  --bd-accent:      #E0A94F;
+  --bd-star-on:     #E0A94F;
+  --bd-star-off:    rgba(224, 169, 79, .3); /* stessa tinta, più tenue: distingue le stelle vuote da quelle piene */
+}
+[data-theme="night"] .bd-section-label,
+[data-theme="night"] .bd-field-label,
+[data-theme="night"] .bd-char-count,
+[data-theme="night"] .bd-edition-autofill,
+[data-theme="night"] .bd-status-read,
+[data-theme="night"] .bd-status-reading,
+[data-theme="night"] .bd-status-want_to_read { color: #E0A94F; }
+
+[data-theme="night"] .bd-review-textarea::placeholder,
+[data-theme="night"] .bd-notes-textarea::placeholder { color: #E0A94F; opacity: .5; }
 
 @keyframes bdSlideIn {
   from { opacity: 0; transform: translateY(14px) scale(.98); }
@@ -57,6 +80,8 @@
 /* Corpo scorrevole con scrollbar sottile */
 .bd-modal-body {
   flex: 1 1 auto; overflow-y: auto;
+  padding-bottom: 14px;
+  clip-path: inset(8.663% 0 0 0); /* nasconde il contenuto scrollato oltre il bordo superiore del riquadro bianco */
   scrollbar-width: thin; scrollbar-color: var(--bd-border) transparent;
 }
 .bd-modal-body::-webkit-scrollbar       { width: 4px; }
@@ -75,18 +100,20 @@
 
 /* ── Header: copertina + titolo + pillole ──────────────────── */
 .bd-header {
-  display: flex; gap: 24px; padding: 28px 28px 26px;
-  background: linear-gradient(150deg, var(--sand) 0%, var(--bd-surface) 60%);
-  border-bottom: 1px solid var(--bd-border-light);
+  display: flex; gap: 16px;
+  padding: 13.32% 9.91% 4px 12.06%;
+  background: transparent;
+  border-bottom: none;
 }
 
 /* Copertina */
-.bd-cover-wrap { position: relative; flex-shrink: 0; }
 .bd-cover {
-  width: 90px; height: 132px; display: block;
+  width: 88px; height: 130px; display: block;
   object-fit: cover; border-radius: 7px;
   box-shadow: 4px 8px 22px rgba(105, 114, 84, 0.2);
 }
+
+.bd-cover-wrap { position: relative; flex-shrink: 0; margin-left: 22px; align-self: flex-start; }
 
 /* Overlay upload copertina — appare all'hover sulla copertina */
 .bd-cover-upload-btn {
@@ -114,44 +141,50 @@
 /* Badge stato lettura sovrapposto alla copertina */
 .bd-status-badge {
   position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
-  font-size: .6rem; font-weight: 700; text-transform: uppercase;
-  padding: 3px 9px; border-radius: 20px; white-space: nowrap;
-  background: var(--bd-surface); border: 1.5px solid currentColor;
+  font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 4px; white-space: nowrap;
+  background: var(--bd-bg); border: none; border-bottom: 1.5px solid currentColor;
 }
 .bd-status-read         { color: var(--forest); }
 .bd-status-reading      { color: var(--earth);  }
 .bd-status-want_to_read { color: var(--moss);   }
 
 /* Info testuale header */
-.bd-header-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
-.bd-title       { font-family: var(--bd-serif); font-size: 1.35rem; font-weight: 600; color: var(--bd-text); margin: 0; line-height: 1.25; }
-.bd-author      { font-family: var(--bd-serif); font-size: .92rem; font-style: italic; color: var(--bd-muted); margin: 0; }
+.bd-header-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.bd-title       { font-family: var(--bd-serif); font-size: .92rem; font-weight: 400; color: var(--bd-muted); margin: 0; line-height: 1; padding-bottom: 2px; border-bottom: 1.5px solid var(--bd-border); }
+.bd-title::before  { content: "Titolo: "; font-weight: 400; color: var(--bd-muted); text-transform: uppercase; letter-spacing: .05em; font-size: .75rem; }
+.bd-author      { font-family: var(--bd-serif); font-size: .92rem; font-style: italic; font-weight: 400; color: var(--bd-muted); margin: 0; line-height: 1; padding-bottom: 2px; border-bottom: 1.5px solid var(--bd-border); }
+.bd-author::before { content: "Autore: "; font-style: normal; text-transform: uppercase; letter-spacing: .05em; font-size: .75rem; }
 
 /* Pillole metadati (editore, anno, pagine, lingua, formato) */
-.bd-pub-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.bd-pub-pills { display: none; }
 .bd-pub-pill {
-  font-size: .71rem; font-weight: 600; white-space: nowrap;
-  color: var(--bd-muted); background: var(--bd-surface);
-  border: 1.5px solid var(--bd-border-light); border-radius: 20px; padding: 2px 8px;
+  font-size: .78rem; font-weight: 500; white-space: nowrap;
+  color: var(--bd-muted); background: transparent;
+  border: none; border-radius: 0; padding: 0;
+  font-family: var(--bd-serif); font-style: italic;
 }
+.bd-pub-pill:not(:last-child)::after { content: '·'; margin-left: 8px; color: var(--bd-border); font-style: normal; }
 
 /* Riga serie e acquisizione */
-.bd-series      { display: flex; align-items: center; gap: 5px; font-size: .83rem; color: var(--bd-muted); }
+.bd-series      { display: none; }
 .bd-series-icon { color: var(--bd-accent); }
 .bd-acquisition { display: flex; align-items: center; gap: 5px; font-size: .81rem; color: var(--bd-muted); }
 
 /* ── Sezione generica ──────────────────────────────────────── */
-.bd-section { padding: 22px 28px; border-bottom: 1px solid var(--bd-border-light); }
+.bd-section { padding: 4px 9.91% 4px 12.06%; border-bottom: none; }
+.bd-progress-section { margin-top: 0; }
+.bd-review-section   { margin-top: 0; }
 
 /* Label sezione (in maiuscolo, sopra al contenuto) */
 .bd-section-label {
-  display: block; margin-bottom: 10px;
+  display: block; margin-bottom: 4px;
   font-size: .69rem; font-weight: 600;
   color: var(--earth); text-transform: uppercase; letter-spacing: .08em;
 }
 /* Label campo singolo */
 .bd-field-label {
-  display: block; margin-bottom: 4px;
+  display: block; margin-bottom: 1px;
   font-size: .69rem; font-weight: 500;
   color: var(--earth); text-transform: uppercase; letter-spacing: .05em;
 }
@@ -162,73 +195,109 @@
 .bd-select-input,
 .bd-page-input,
 .bd-date-input {
-  border: 1.5px solid var(--bd-border); border-radius: var(--bd-radius-sm);
-  font-size: .87rem; font-family: var(--bd-sans);
-  color: var(--bd-text); background: var(--bd-bg);
+  border: none; border-bottom: 1.5px solid var(--bd-border); border-radius: 0;
+  font-size: .87rem; font-family: var(--bd-serif); line-height: 1;
+  color: var(--bd-text); background: transparent;
   transition: border-color var(--bd-ease), background var(--bd-ease);
 }
 .bd-text-input:focus,
 .bd-select-input:focus,
 .bd-page-input:focus,
-.bd-date-input:focus { outline: none; border-color: var(--bd-accent); }
+.bd-date-input:focus { outline: none; border-bottom-color: var(--bd-accent); }
 
 /* Larghezza piena per text e select */
 .bd-text-input,
-.bd-select-input { width: 100%; padding: 6px 10px; box-sizing: border-box; }
+.bd-select-input { width: 100%; padding: 2px 2px; box-sizing: border-box; }
 
 /* Input pagine: compact e senza frecce numeriche */
 .bd-page-input {
-  width: 52px; padding: 4px 6px; text-align: center;
+  width: 52px; padding: 2px 2px; text-align: center;
   -moz-appearance: textfield;
 }
 .bd-page-input::-webkit-inner-spin-button,
 .bd-page-input::-webkit-outer-spin-button { -webkit-appearance: none; }
-.bd-page-input[readonly] { background: var(--bd-border-light); color: var(--bd-muted); cursor: default; }
+.bd-page-input[readonly] { background: transparent; color: var(--bd-muted); cursor: default; }
 
 /* Input data: larghezza piena */
-.bd-date-input { width: 100%; padding: 6px 10px; box-sizing: border-box; }
+.bd-date-input { width: 100%; padding: 2px 2px; box-sizing: border-box; }
 
 /* ── Progress bar lettura ──────────────────────────────────── */
-.bd-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bd-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.bd-progress-header .bd-section-label {
+  font-weight: 500; letter-spacing: .05em; /* come STATO */
+}
+.bd-progress-header .bd-section-label::after { content: ':'; }
 .bd-progress-pages  { display: flex; align-items: center; gap: 4px; font-size: .87rem; }
 .bd-page-sep        { color: var(--bd-muted); }
 
-.bd-bar-track { height: 10px; background: var(--bd-border); border-radius: 999px; overflow: hidden; }
+.bd-bar-track { height: 3px; background: var(--bd-border); border-radius: 0; overflow: hidden; }
 .bd-bar-fill  {
   height: 100%; min-width: 2px;
-  background: linear-gradient(90deg, var(--bd-accent), #a7c4a2);
-  border-radius: 999px;
+  background: var(--bd-accent);
+  border-radius: 0;
   transition: width .45s cubic-bezier(.4,0,.2,1);
 }
 .bd-bar-pct { font-size: .71rem; font-weight: 500; color: var(--bd-muted); text-align: right; margin-top: 4px; }
 
 /* ── Date lettura ──────────────────────────────────────────── */
-.bd-dates-row  { display: flex; align-items: center; gap: 12px; }
-.bd-date-field { flex: 1; display: flex; flex-direction: column; }
-.bd-date-arrow { color: var(--bd-muted); flex-shrink: 0; font-size: 1rem; margin-top: 18px; }
-.bd-duration   { margin: 8px 0 0; font-size: .81rem; color: var(--bd-muted); font-style: italic; min-height: 1.1em; }
+.bd-dates-row  { display: flex; align-items: center; gap: 8px; }
+.bd-date-field {
+  flex: 1; display: flex; flex-direction: row; align-items: center; gap: 8px;
+  padding-bottom: 2px; border-bottom: 1.5px solid var(--bd-border);
+}
+.bd-date-field .bd-field-label {
+  display: inline; margin-bottom: 0; white-space: nowrap;
+}
+.bd-date-field .bd-field-label::after { content: ':'; }
+.bd-date-field .bd-date-input { flex: 1; width: auto; border-bottom: none; padding: 2px 2px; }
+.bd-date-arrow { color: var(--bd-muted); flex-shrink: 0; font-size: 1rem; }
+.bd-duration   { margin: 4px 0 0; font-size: .81rem; color: var(--bd-muted); font-style: italic; min-height: 1.1em; }
 
 /* ── Stato lettura + scaffale ──────────────────────────────── */
-.bd-status-section { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
-.bd-status-group,
-.bd-shelf-group    { display: flex; flex-direction: column; gap: 6px; }
-.bd-shelf-group    { flex: 1; min-width: 150px; }
+.bd-status-section { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; padding-top: 20px; }
+.bd-status-group    {
+  display: flex; flex-direction: row; align-items: center; gap: 10px; flex: 1;
+  padding-bottom: 2px; padding-right: 6px; border-bottom: 1.5px solid var(--bd-border);
+}
+.bd-status-group .bd-field-label {
+  display: inline; margin-bottom: 0; white-space: nowrap;
+}
+.bd-status-group .bd-field-label::after { content: ':'; }
+.bd-shelf-group     { display: flex; flex-direction: row; align-items: baseline; gap: 8px; flex: 0 0 auto; padding-bottom: 1px; border-bottom: 1.5px solid var(--bd-border); }
+.bd-shelf-group .bd-field-label {
+  display: inline; margin-bottom: 0; white-space: nowrap;
+  font-family: var(--bd-serif); font-size: .75rem; /* come TITOLO:/AUTORE: */
+}
+.bd-shelf-group .bd-field-label::after { content: ':'; }
+.bd-shelf-group .bd-select-input {
+  flex: 0 1 auto; width: auto; max-width: 130px;
+  border-bottom: none; padding: 0 2px 0 0; margin: 0;
+  font-size: .92rem; line-height: 1.1; /* come il valore di Titolo/Autore */
+}
 .bd-status-btns    { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .bd-status-btn {
-  font-family: var(--bd-sans); font-size: .82rem;
-  padding: 6px 13px; border-radius: 20px;
-  border: 1.5px solid var(--bd-border);
+  font-family: var(--bd-serif); font-size: .85rem; line-height: 1;
+  padding: 2px 2px; border-radius: 0;
+  border: none;
   background: transparent; color: var(--bd-muted);
   cursor: pointer; transition: all var(--bd-ease);
 }
-.bd-status-btn:hover  { border-color: var(--bd-accent); color: var(--bd-accent); }
-.bd-status-btn.active { background: var(--bd-accent-soft); border-color: var(--bd-accent); color: var(--bd-accent); font-weight: 600; }
+.bd-status-btn:hover  { color: var(--bd-accent); }
+.bd-status-btn.active { color: var(--bd-accent); font-weight: 600; }
+
 
 /* ── Recensione ────────────────────────────────────────────── */
-.bd-review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bd-review-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 2px; padding-right: 6px; border-bottom: 1.5px solid var(--bd-border); margin-bottom: 4px;
+}
+.bd-review-header .bd-section-label {
+  font-weight: 500; letter-spacing: .05em; /* come STATO */
+}
+.bd-review-header .bd-section-label::after { content: ':'; }
 
-.bd-stars       { display: flex; gap: 3px; cursor: pointer; }
+.bd-stars       { display: flex; gap: 3px; cursor: pointer; transform: translateY(-3px); }
 .bd-star        { font-size: 1.5rem; color: var(--bd-star-off); user-select: none; line-height: 1; transition: color .12s ease, transform .1s ease; }
 .bd-star:hover  { transform: scale(1.18); }
 .bd-star.active { color: var(--bd-star-on); }
@@ -237,8 +306,10 @@
 .bd-review-textarea,
 .bd-notes-textarea {
   width: 100%; box-sizing: border-box; display: block;
-  min-height: 100px; margin-top: 8px; padding: 10px 12px;
-  background: var(--bd-bg); color: var(--bd-text);
+  min-height: 80px; margin-top: 4px; padding: 2px 2px;
+  background: transparent; color: var(--bd-text);
+  border: none; border-bottom: 1.5px solid var(--bd-border);
+  font-family: var(--bd-serif);
   transition: border-color var(--bd-ease);
 }
 .bd-review-textarea::placeholder,
@@ -250,11 +321,11 @@
 .bd-md-preview {
   display: none;
   width: 100%; box-sizing: border-box;
-  min-height: 100px; padding: 10px 12px; margin-top: 8px;
-  background: var(--bd-bg); color: var(--bd-text);
-  border: 1.5px solid var(--bd-border); border-radius: var(--bd-radius-sm);
+  min-height: 80px; padding: 2px 2px; margin-top: 4px;
+  background: transparent; color: var(--bd-text);
+  border: none; border-bottom: 1.5px solid var(--bd-border); border-radius: 0;
   font-size: .9rem; font-family: var(--bd-serif);
-  line-height: 1.65; cursor: text;
+  line-height: 1.5; cursor: text;
 }
 .bd-md-preview p         { margin: .3em 0; }
 .bd-md-preview strong    { font-weight: 700; }
@@ -270,11 +341,17 @@
   border-radius: 4px; font-family: monospace; font-size: .85em;
 }
 
-.bd-notes-section { background: var(--bd-surface); } /* sfondo leggermente distinto */
-.bd-char-count    { text-align: right; font-size: .7rem; color: var(--earth); margin: 4px 0 0; }
+.bd-notes-section { background: transparent; }
+.bd-notes-section > .bd-section-label {
+  display: inline-block; padding-bottom: 2px;
+  border-bottom: 1.5px solid var(--bd-border); margin-bottom: 4px;
+  font-weight: 500; letter-spacing: .05em; /* come STATO */
+}
+.bd-notes-section > .bd-section-label::after { content: ':'; }
+.bd-char-count    { text-align: right; font-size: .7rem; color: var(--earth); margin: 2px 0 0; }
 
 /* ── Campi extra (serie, acquisizione) ─────────────────────── */
-.bd-extra-row            { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.bd-extra-row            { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
 .bd-extra-row:last-child { margin-bottom: 0; }
 .bd-field-group          { display: flex; flex-direction: column; }
 .bd-field-grow           { flex: 1; min-width: 120px; }
@@ -309,25 +386,28 @@
 /* ── Barra azioni fissa in basso ───────────────────────────── */
 /* Fuori da .bd-modal-body: non scorre con il contenuto */
 .bd-actions {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding: 12px 28px;
-  background: var(--bd-surface); border-top: 1px solid var(--bd-border-light);
+  display: flex; justify-content: space-between; align-items: center; gap: 6px;
+  height: 8.02%; box-sizing: border-box;
+  padding: 0 9.91% 0 12.06%;
+  background: transparent; border: none;
   flex-shrink: 0;
 }
-.bd-actions-left { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.bd-actions-left { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
 
 /* I tre bottoni della barra (Rimuovi, Sposta, Salva) hanno forma identica */
 .bd-actions .btn-danger-sm,
 .bd-actions .btn-confirm,
 .bd-actions .btn-move {
-  font-family: var(--bd-sans); font-size: .82rem; font-weight: 500;
-  padding: 6px 14px; height: 34px; line-height: 1;
-  border-radius: 20px; border: 1.5px solid var(--sand);
+  font-family: var(--bd-serif); font-size: .72rem; font-weight: 500;
+  padding: 4px 10px; height: 27px; line-height: 1;
+  border-radius: 4px; border: 1.5px solid var(--sand);
   background: transparent; color: var(--earth);
   cursor: pointer; white-space: nowrap;
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 3px;
   transition: all var(--bd-ease);
 }
+.bd-actions .btn-danger-sm img,
+.bd-actions .btn-move img { width: 1rem !important; height: 1rem !important; }
 
 .bd-actions .btn-move:hover       { border-color: var(--forest); color: var(--forest); background: var(--bd-accent-soft); }
 .bd-actions .btn-danger-sm        { border-color: var(--red); color: var(--red); }
@@ -341,36 +421,6 @@
 .stat-card--active .stat-number { color: var(--bd-accent); }
 
 /* ── Responsive ────────────────────────────────────────────── */
-@media (max-width: 520px) {
-  .bd-header, .bd-section, .bd-actions { padding-left: 16px; padding-right: 16px; }
-  .bd-edition-grid    { grid-template-columns: 1fr; }
-  .bd-cover           { width: 70px; height: 104px; }
-  .bd-title           { font-size: 1.1rem; }
-  .bd-dates-row       { flex-wrap: wrap; }
-  .bd-date-arrow      { display: none; }
-  .bd-status-section  { flex-direction: column; align-items: stretch; }
-  .bd-isbn-row        { flex-wrap: wrap; }
-  .bd-isbn-fetch-btn  { width: 100%; padding: 8px; text-align: center; }
-}
-
-@media (max-width: 768px) {
-  #modal-book-detail {
-    align-items: flex-start;
-    padding: 0;
-  }
-  .bd-modal {
-    max-height: calc(100vh - 130px);
-    border-radius: 18px 18px 0 0;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .bd-actions {
-    justify-content: center;
-    gap: 12px;
-    padding: 12px 16px;
-  }
-  .bd-actions-left {
-    justify-content: center;
-  }
+@media (max-width: 360px) {
+  #modal-book-detail { padding: 12px 8px; }
 }

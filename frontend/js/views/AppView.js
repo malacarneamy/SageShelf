@@ -525,7 +525,7 @@ class AppView extends BaseView {
         const modal = document.getElementById('modal-book-detail');
 
         modal.innerHTML = `
-        <div class="modal bd-modal" data-user-book-id="${userBookId}" data-book-id="${bookId}">
+        <div class="bd-modal" data-user-book-id="${userBookId}" data-book-id="${bookId}">
             <button class="modal-close-btn" id="book-detail-close">×</button>
             <div class="bd-modal-body">
 
@@ -550,6 +550,14 @@ class AppView extends BaseView {
                     <h2 class="bd-title">${this._esc(book.title)}</h2>
                     <p class="bd-author" id="bd-author-display" style="cursor:pointer" title="Clicca per modificare">${this._esc(book.author || 'Autore sconosciuto')}</p>
                     <input type="text" id="bd-author-input" class="bd-text-input hidden" value="${this._esc(book.author || '')}" placeholder="Nome autore" style="margin-top:4px">
+                    ${!isWishlist ? `
+                    <div class="bd-shelf-group">
+                        <label class="bd-field-label" for="bd-shelf-select">Scaffale</label>
+                        <select class="bd-select-input" id="bd-shelf-select">
+                            <option value="">— Nessuno —</option>
+                            ${this._shelves.map(s => `<option value="${s.id}" ${book.shelf_id == s.id ? 'selected' : ''}>${this._esc(s.name)}</option>`).join('')}
+                        </select>
+                    </div>` : ''}
                     <div class="bd-pub-pills">
                         ${dispPublisher ? `<span class="bd-pub-pill">🏢 ${this._esc(dispPublisher)}</span>` : ''}
                         ${dispYear      ? `<span class="bd-pub-pill">📅 ${dispYear}</span>` : ''}
@@ -572,9 +580,9 @@ class AppView extends BaseView {
 
 
 
-            <!-- ── STATO E SCAFFALE (solo Collezione) ── -->
+            <!-- ── STATO (solo Collezione) ── -->
             ${!isWishlist ? `
-            <div class="bd-status-section">
+            <div class="bd-section bd-status-section">
                 <div class="bd-status-group">
                     <span class="bd-field-label">Stato</span>
                     <div class="bd-status-btns">
@@ -583,18 +591,11 @@ class AppView extends BaseView {
                         <button class="bd-status-btn${book.status === 'read'         ? ' active' : ''}" data-status="read">Letto</button>
                     </div>
                 </div>
-                <div class="bd-shelf-group">
-                    <label class="bd-field-label" for="bd-shelf-select">Scaffale</label>
-                    <select class="bd-select-input" id="bd-shelf-select">
-                        <option value="">— Nessuno —</option>
-                        ${this._shelves.map(s => `<option value="${s.id}" ${book.shelf_id == s.id ? 'selected' : ''}>${this._esc(s.name)}</option>`).join('')}
-                    </select>
-                </div>
             </div>` : ''}
 
             <!-- ── PROGRESS (non in wishlist) ── -->
             ${!isWishlist ? `
-            <div class="bd-progress-section">
+            <div class="bd-section bd-progress-section">
                 <div class="bd-progress-header">
                     <span class="bd-section-label">Avanzamento lettura</span>
                     <span class="bd-progress-pages">
@@ -614,7 +615,7 @@ class AppView extends BaseView {
 
             <!-- ── DATE LETTURA (solo Collezione) ── -->
             ${!isWishlist ? `
-            <div class="bd-dates-section">
+            <div class="bd-section bd-dates-section">
                 <div class="bd-dates-row">
                     <div class="bd-date-field">
                         <label class="bd-field-label" for="bd-started-at">Iniziato il</label>
@@ -633,7 +634,7 @@ class AppView extends BaseView {
 
             <!-- ── RECENSIONE (solo Collezione) ── -->
             ${!isWishlist ? `
-            <div class="bd-review-section">
+            <div class="bd-section bd-review-section">
                 <div class="bd-review-header">
                     <span class="bd-section-label">La tua recensione</span>
                     <div class="bd-stars" id="bd-stars">
@@ -649,7 +650,7 @@ class AppView extends BaseView {
             </div>` : ''}
 
             <!-- ── NOTE PERSONALI ── -->
-            <div class="bd-notes-section">
+            <div class="bd-section bd-notes-section">
                 <span class="bd-section-label">Note personali</span>
                 <textarea class="bd-notes-textarea" id="bd-personal-notes"
                         placeholder="Appunti, citazioni preferite, riflessioni…"
@@ -658,7 +659,7 @@ class AppView extends BaseView {
             </div>
 
             <!-- ── SERIE + ACQUISIZIONE ── -->
-            <div class="bd-extra-section">
+            <div class="bd-section bd-extra-section">
                 <div class="bd-extra-row">
                     <div class="bd-field-group bd-field-grow">
                         <label class="bd-field-label" for="bd-series-name">Serie</label>
@@ -691,7 +692,7 @@ class AppView extends BaseView {
             </div>
 
             <!-- ── DETTAGLI EDIZIONE ── -->
-            <div class="bd-edition-details">
+            <div class="bd-section bd-edition-details">
                 <div class="bd-edition-summary-static">
                     <span class="bd-section-label">Dettagli edizione</span>
                 </div>
@@ -747,7 +748,7 @@ class AppView extends BaseView {
 
             </div><!-- /bd-modal-body -->
 
-            <!-- ── BARRA AZIONI FISSA IN BASSO ── -->
+            <!-- ── BARRA AZIONI (nel margine verde in basso dell'immagine) ── -->
             <div class="bd-actions">
                 <div class="bd-actions-left">
                     <button class="btn-danger-sm" id="detail-remove-btn"><img src="assets/icon/cestino.png" alt="" style="width:1.5rem;height:1.5rem;object-fit:contain;vertical-align:middle;margin-right:.3rem;">Rimuovi</button>
@@ -758,8 +759,7 @@ class AppView extends BaseView {
                 </div>
                 <button class="btn-confirm" id="detail-save-btn">Salva</button>
             </div>
-
-        </div>`;
+        </div><!-- /bd-modal -->`;
 
         this._bindDetailEvents(book, details, userBookId, bookId);
     }
