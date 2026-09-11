@@ -74,4 +74,20 @@ class UserModel {
         $stmt->execute([$userId, $sortBy]);
         return true;
     }
+
+    public function getAllShelfPosition(int $userId): int {
+        $stmt = $this->db->prepare('SELECT all_shelf_position FROM user_preferences WHERE user_id = ?');
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+        return $row ? (int)$row['all_shelf_position'] : 0;
+    }
+
+    public function updateAllShelfPosition(int $userId, int $position): bool {
+        $stmt = $this->db->prepare('
+            INSERT INTO user_preferences (user_id, all_shelf_position) VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE all_shelf_position = VALUES(all_shelf_position)
+        ');
+        $stmt->execute([$userId, $position]);
+        return true;
+    }
 }

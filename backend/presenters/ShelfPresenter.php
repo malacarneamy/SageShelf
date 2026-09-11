@@ -9,7 +9,10 @@ class ShelfPresenter {
     }
 
     public function getAll(int $userId): array {
-        return ['shelves' => $this->model->getAll($userId)];
+        return [
+            'shelves'            => $this->model->getAll($userId),
+            'all_shelf_position' => (new UserModel())->getAllShelfPosition($userId),
+        ];
     }
 
     public function create(int $userId, array $body): array {
@@ -36,8 +39,15 @@ class ShelfPresenter {
     public function reorder(int $userId, array $body): array {
         $ids = $body['ids'] ?? [];
         if (empty($ids)) respondError('ids obbligatorio');
+        // "Tutti" non è uno scaffale reale: viaggia nell'array come id sentinella 0.
+        // ShelfModel::reorder ignora silenziosamente lo 0 (nessuno scaffale con quell'id),
+        // qui ne salviamo solo la posizione nelle preferenze utente.
         $this->model->reorder($userId, $ids);
-        return ['shelves' => $this->model->getAll($userId)];
+        $allPos = array_search(0, $ids, true);
+        if ($allPos !== false) {
+            (new UserModel())->updateAllShelfPosition($userId, $allPos);
+        }
+        return $this->getAll($userId);
     }
 
     public function updateSort(int $userId, int $shelfId, array $body): array {

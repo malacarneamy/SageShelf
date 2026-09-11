@@ -8,7 +8,7 @@ class ShelfPresenter extends BasePresenter {
   async load() {
     await this._run(async () => {
       const data = await api.getShelves();
-      this.view.renderShelves(data.shelves);
+      this.view.renderShelves(data.shelves, data.all_shelf_position);
     });
   }
 

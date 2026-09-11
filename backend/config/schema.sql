@@ -101,9 +101,13 @@ CREATE TABLE IF NOT EXISTS book_details (
 
 -- ── user_preferences ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_preferences (
-    user_id     INT         NOT NULL PRIMARY KEY,
-    all_sort_by VARCHAR(20) NOT NULL DEFAULT 'added_desc'
+    user_id            INT         NOT NULL PRIMARY KEY,
+    all_sort_by        VARCHAR(20) NOT NULL DEFAULT 'added_desc',
+    all_shelf_position INT         NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Migrazione (se il database esiste già):
+-- ALTER TABLE user_preferences ADD COLUMN all_shelf_position INT NOT NULL DEFAULT 0;
 
 -- ── indici ────────────────────────────────────────────────────
 CREATE INDEX idx_user_books_user     ON user_books(user_id);

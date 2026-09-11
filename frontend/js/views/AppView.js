@@ -19,6 +19,8 @@ class AppView extends BaseView {
         this._editingBook      = null;
         this._detailBook       = null;
         this._reviewBookId     = null;
+        this._shelfDragEnabled = false;
+        this._allShelfPosition = 0; // posizione della pillola "Tutti" tra gli scaffali
 
         this._bindStaticEvents();
     }
@@ -164,8 +166,9 @@ class AppView extends BaseView {
 
     // ── Shelves ───────────────────────────────────────────────
 
-    renderShelves(shelves) {
+    renderShelves(shelves, allShelfPosition = 0) {
         this._shelves = shelves;
+        this._allShelfPosition = allShelfPosition ?? 0;
         this._renderShelfPills();
         this._renderShelfSelectInModal();
     }
@@ -182,19 +185,24 @@ class AppView extends BaseView {
         if (!track) return;
         const total = this._shelves.length + 1;
 
-        const allPill = `<button class="shelf-pill ${this._activeShelfIndex === 0 ? 'active' : ''}" data-shelf-index="0">Tutti</button>`;
-        const pills = this._shelves.map((s, i) => `
+        const allPill = `<button class="shelf-pill ${this._activeShelfIndex === 0 ? 'active' : ''}" data-shelf-index="0" data-shelf-id="0">Tutti</button>`;
+        const shelfPills = this._shelves.map((s, i) => `
             <button class="shelf-pill ${this._activeShelfIndex === i + 1 ? 'active' : ''}"
                     data-shelf-index="${i + 1}" data-shelf-id="${s.id}" data-shelf-name="${this._esc(s.name)}">
                 ${this._esc(s.name)}
-            </button>`).join('');
+            </button>`);
+        // Inserisce "Tutti" nella posizione salvata invece di fissarla sempre per prima
+        const insertAt = Math.max(0, Math.min(this._allShelfPosition, shelfPills.length));
+        shelfPills.splice(insertAt, 0, allPill);
+        const pills = shelfPills.join('');
         const addPill = ``;
 
-        track.innerHTML = allPill + pills + addPill;
+        track.innerHTML = pills + addPill;
         this._updateArrows(total);
 
         track.querySelectorAll('.shelf-pill[data-shelf-index]').forEach(pill => {
             pill.addEventListener('click', () => {
+                if (this._shelfDragEnabled) return; // in modalità riordino il click non naviga
                 this._activeShelfIndex = parseInt(pill.dataset.shelfIndex);
                 this._lastShelfIndex   = this._activeShelfIndex;
                 this._activeStatus     = null;  // reset filtro al cambio scaffale
@@ -208,8 +216,69 @@ class AppView extends BaseView {
             });
         });
 
+        // Drag & drop — include anche "Tutti" (id sentinella "0"), riordinabile come uno scaffale qualsiasi
+        if (this._shelfDragEnabled) {
+            track.querySelectorAll('.shelf-pill[data-shelf-id]').forEach(pill => {
+                pill.setAttribute('draggable', true);
+                pill.addEventListener('dragstart', e => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', pill.dataset.shelfId);
+                    pill.classList.add('dragging');
+                    this._draggedShelfPill = pill;
+                });
+                pill.addEventListener('dragend', () => {
+                    pill.classList.remove('dragging');
+                    track.querySelectorAll('.shelf-pill').forEach(p => p.classList.remove('drag-over'));
+                    this._draggedShelfPill = null;
+                    this._saveShelfOrder();
+                });
+                pill.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (pill !== this._draggedShelfPill) {
+                        track.querySelectorAll('.shelf-pill').forEach(p => p.classList.remove('drag-over'));
+                        pill.classList.add('drag-over');
+                        const pills   = [...track.querySelectorAll('.shelf-pill[data-shelf-id]')];
+                        const fromIdx = pills.indexOf(this._draggedShelfPill);
+                        const toIdx   = pills.indexOf(pill);
+                        if (fromIdx < toIdx) pill.after(this._draggedShelfPill);
+                        else pill.before(this._draggedShelfPill);
+                    }
+                });
+                pill.addEventListener('drop', e => {
+                    e.preventDefault();
+                    pill.classList.remove('drag-over');
+                });
+            });
+        }
+
         this._updateShelfCurrentName();
     }
+
+    async _saveShelfOrder() {
+        const track = document.getElementById('shelf-pills-track');
+        const ids   = [...track.querySelectorAll('.shelf-pill[data-shelf-id]')]
+            .map(p => parseInt(p.dataset.shelfId));
+        // Ricorda lo scaffale attivo per posizione, non per indice, così restiamo
+        // sulla vista giusta anche se le posizioni sono cambiate.
+        const activeShelfId = this._activeShelfIndex > 0
+            ? this._shelves[this._activeShelfIndex - 1]?.id
+            : null;
+        try {
+            await api.reorderShelves(ids);
+        } catch (e) {
+            this.showError('Errore nel riordino scaffali');
+            console.error(e);
+        }
+        await this.shelfPresenter.load();
+        if (activeShelfId != null) {
+            const idx = this._shelves.findIndex(s => s.id === activeShelfId);
+            this._activeShelfIndex = idx !== -1 ? idx + 1 : 0;
+            this._lastShelfIndex   = this._activeShelfIndex;
+            this._renderShelfPills();
+        }
+    }
+
 
     _updateArrows(total) {
         document.getElementById('shelf-prev').disabled = this._activeShelfIndex === 0;
@@ -1736,6 +1805,20 @@ class AppView extends BaseView {
             this._dragEnabled = false;
             document.getElementById('exit-drag-btn').classList.add('hidden');
             this._loadCurrentView();
+        });
+
+        document.getElementById('menu-reorder-shelves')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hamburgerMenu.classList.add('hidden');
+            this._shelfDragEnabled = true;
+            this.showSuccess('Trascina gli scaffali per riordinarli!');
+            document.getElementById('exit-shelf-drag-btn')?.classList.remove('hidden');
+            this._renderShelfPills();
+        });
+        document.getElementById('exit-shelf-drag-btn')?.addEventListener('click', () => {
+            this._shelfDragEnabled = false;
+            document.getElementById('exit-shelf-drag-btn').classList.add('hidden');
+            this._renderShelfPills();
         });
 
         // Toggle visibilità password
