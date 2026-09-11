@@ -85,6 +85,10 @@
   scrollbar-width: thin; scrollbar-color: var(--bd-border) transparent;
 }
 .bd-modal-body::-webkit-scrollbar       { width: 4px; }
+/* Scorrimento orizzontale solo da PC: su smartphone/touch lo nascondiamo */
+@media (pointer: coarse) {
+  .bd-modal-body { overflow-x: hidden; }
+}
 .bd-modal-body::-webkit-scrollbar-track { background: transparent; }
 .bd-modal-body::-webkit-scrollbar-thumb { background: var(--bd-border); border-radius: 99px; }
 
@@ -213,6 +217,7 @@
 .bd-page-input {
   width: 52px; padding: 2px 2px; text-align: center;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .bd-page-input::-webkit-inner-spin-button,
 .bd-page-input::-webkit-outer-spin-button { -webkit-appearance: none; }
@@ -240,7 +245,7 @@
 .bd-bar-pct { font-size: .71rem; font-weight: 500; color: var(--bd-muted); text-align: right; margin-top: 4px; }
 
 /* ── Date lettura ──────────────────────────────────────────── */
-.bd-dates-row  { display: flex; align-items: center; gap: 8px; }
+.bd-dates-row  { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 .bd-date-field {
   flex: 1; display: flex; flex-direction: row; align-items: center; gap: 8px;
   padding-bottom: 2px; border-bottom: 1.5px solid var(--bd-border);
@@ -250,7 +255,7 @@
 }
 .bd-date-field .bd-field-label::after { content: ':'; }
 .bd-date-field .bd-date-input { flex: 1; width: auto; border-bottom: none; padding: 2px 2px; }
-.bd-date-arrow { color: var(--bd-muted); flex-shrink: 0; font-size: 1rem; }
+.bd-date-arrow { display: none; }
 .bd-duration   { margin: 4px 0 0; font-size: .81rem; color: var(--bd-muted); font-style: italic; min-height: 1.1em; }
 
 /* ── Stato lettura + scaffale ──────────────────────────────── */
