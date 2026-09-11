@@ -14,6 +14,7 @@ class AppView extends BaseView {
         this._lastShelfIndex   = 0;
         this._activeSection    = 'library';
         this._activeStatus     = null;  // null = tutti, oppure 'want_to_read'|'reading'|'read'
+        this._activeSearchQuery = null; // query di ricerca attiva (null = nessuna ricerca in corso)
         this._scanner          = null;
         this._editingBook      = null;
         this._detailBook       = null;
@@ -130,8 +131,26 @@ class AppView extends BaseView {
         }
 
         this._activeStatus = null;
+        this._activeSearchQuery = null;
+        this._clearSearchInput();
         this._renderShelfPills();
         this._loadCurrentView();
+    }
+
+    _clearSearchInput() {
+        const input = document.getElementById('search-input');
+        if (input) input.value = '';
+    }
+
+    // Ricarica la griglia rispettando il contesto attuale: se una ricerca
+    // è ancora "attiva" (non annullata selezionando uno scaffale preciso),
+    // la rieseguiamo invece di tornare alla vista normale per scaffale.
+    _refreshView() {
+        if (this._activeSearchQuery) {
+            this._searchAll(this._activeSearchQuery);
+        } else {
+            this._loadCurrentView();
+        }
     }
 
     _loadCurrentView() {
@@ -179,6 +198,8 @@ class AppView extends BaseView {
                 this._activeShelfIndex = parseInt(pill.dataset.shelfIndex);
                 this._lastShelfIndex   = this._activeShelfIndex;
                 this._activeStatus     = null;  // reset filtro al cambio scaffale
+                this._activeSearchQuery = null;
+                this._clearSearchInput();
                 track.querySelectorAll('.shelf-pill').forEach(p => p.classList.remove('active'));
                 pill.classList.add('active');
                 this._updateArrows(total);
@@ -463,6 +484,7 @@ class AppView extends BaseView {
     // ── Book detail modal ─────────────────────────────────────
 
     async _openBookDetail(book) {
+        this._clearSearchInput();
         this._detailBook = book;
         const userBookId = book.user_book_id ?? book.id;
         const details    = await this.bookDetailPresenter.loadDetails(userBookId) ?? {};
@@ -956,13 +978,13 @@ class AppView extends BaseView {
             await api.updateBook(userBookId, { is_wishlist: true });
             this._closeModal('modal-book-detail');
             this.showSuccess('Spostato in lista desideri!');
-            this._loadCurrentView();
+            this._refreshView();
         });
         modal.querySelector('#detail-move-library')?.addEventListener('click', async () => {
             await api.updateBook(userBookId, { is_wishlist: false, status: 'want_to_read' });
             this._closeModal('modal-book-detail');
             this.showSuccess('Spostato in Collezione!');
-            this._loadCurrentView();
+            this._refreshView();
         });
 
         // ── Rimuovi ───────────────────────────────────────────
@@ -970,6 +992,7 @@ class AppView extends BaseView {
             if (!confirm('Rimuovere questo libro dalla collezione?')) return;
             await this.bookPresenter.removeBook(userBookId);
             this._closeModal('modal-book-detail');
+            this._refreshView();
         });
 
         // ── Salva ─────────────────────────────────────────────
@@ -1034,7 +1057,7 @@ class AppView extends BaseView {
                 this.bookDetailPresenter.invalidate(userBookId);
                 this._closeModal('modal-book-detail');
                 this.showSuccess('Salvato!');
-                this._loadCurrentView();
+                this._refreshView();
             } catch (err) {
                 this.showError('Errore nel salvataggio');
                 console.error(err);
@@ -1276,6 +1299,7 @@ class AppView extends BaseView {
 
     async _searchAll(query) {
         try {
+            this._activeSearchQuery = query;
             const isWishlist = this._activeSection === 'wishlist';
             const shelfId = (!isWishlist && this._activeShelfIndex > 0)
                 ? (this._shelves[this._activeShelfIndex - 1]?.id ?? null)
@@ -1375,7 +1399,7 @@ class AppView extends BaseView {
         }
 
         // Svuota la ricerca e aggiorna la griglia con la vista corretta
-        document.getElementById('search-input').value = '';
+        this._clearSearchInput();
         this._renderShelfPills();
         this._loadCurrentView();
 
@@ -1495,6 +1519,8 @@ class AppView extends BaseView {
                 this._activeShelfIndex++;
                 this._lastShelfIndex = this._activeShelfIndex;
                 this._activeStatus   = null;
+                this._activeSearchQuery = null;
+                this._clearSearchInput();
                 this._renderShelfPills();
                 this._loadCurrentView();
                 grid.classList.remove('book-grid--slide-left', 'book-grid--slide-right');
@@ -1504,6 +1530,8 @@ class AppView extends BaseView {
                 this._activeShelfIndex--;
                 this._lastShelfIndex = this._activeShelfIndex;
                 this._activeStatus   = null;
+                this._activeSearchQuery = null;
+                this._clearSearchInput();
                 this._renderShelfPills();
                 this._loadCurrentView();
                 grid.classList.remove('book-grid--slide-left', 'book-grid--slide-right');
@@ -1518,8 +1546,7 @@ class AppView extends BaseView {
             clearTimeout(searchTimer);
             const q = e.target.value.trim();
             if (!q) {
-                // Query vuota: ripristina la vista normale
-                this._loadCurrentView();
+                // Query vuota: resta sui risultati di ricerca finché non si seleziona uno scaffale
                 return;
             }
             searchTimer = setTimeout(() => this._searchAll(q), 350);
