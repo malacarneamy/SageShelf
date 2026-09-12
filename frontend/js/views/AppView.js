@@ -1,6 +1,5 @@
-// frontend/js/views/AppView.js
-
 class AppView extends BaseView {
+    // Inizializza presenter e stato interno della vista.
     constructor() {
         super();
         this.authPresenter        = new AuthPresenter(this);
@@ -13,26 +12,26 @@ class AppView extends BaseView {
         this._activeShelfIndex = 0;
         this._lastShelfIndex   = 0;
         this._activeSection    = 'library';
-        this._activeStatus     = null;  // null = tutti, oppure 'want_to_read'|'reading'|'read'
-        this._activeSearchQuery = null; // query di ricerca attiva (null = nessuna ricerca in corso)
+        this._activeStatus     = null;
+        this._activeSearchQuery = null;
         this._scanner          = null;
         this._editingBook      = null;
         this._detailBook       = null;
         this._reviewBookId     = null;
         this._shelfDragEnabled = false;
-        this._allShelfPosition = 0; // posizione della pillola "Tutti" tra gli scaffali
+        this._allShelfPosition = 0;
 
         this._bindStaticEvents();
     }
 
+    // Avvio app: carica il tema e tenta il login automatico.
     async init() {
         this._loadTheme();
         this._dragEnabled = false;
         await this.authPresenter.init();
     }
 
-    // ── Auth ──────────────────────────────────────────────────
-
+    // Mostra la UI post-login e carica scaffali/libri dell'utente.
     onLoggedIn(user) {
         this._currentUser = user;
         document.getElementById('auth-screen').classList.add('hidden');
@@ -43,7 +42,6 @@ class AppView extends BaseView {
         document.getElementById('nav-username-desktop')?.setAttribute('title', user.username);
         document.getElementById('hamburger-wrap')?.classList.remove('hidden');
         document.getElementById('bottom-nav')?.classList.remove('hidden');
-        // Mostra avatar se presente
         if (user.avatar_url) {
             const avatarImg = `<img src="${user.avatar_url}" class="nav-avatar-img" alt="avatar">`;
             const navUsername = document.getElementById('nav-username');
@@ -54,7 +52,6 @@ class AppView extends BaseView {
         this.shelfPresenter.load();
         this._loadCurrentView();
 
-        // Trascina verso il basso per aggiornare (mobile)
         if (!this._ptrBound) {
             this._ptrBound = true;
             new PullToRefresh({
@@ -64,7 +61,6 @@ class AppView extends BaseView {
             });
         }
 
-        // Pulsante torna su — registrato dopo che main-content è visibile
         const scrollBtn  = document.getElementById('scroll-top-btn');
         const scrollable = document.querySelector('.main-content');
         scrollable?.addEventListener('scroll', () => {
@@ -75,6 +71,7 @@ class AppView extends BaseView {
         });
     }
 
+    // Torna alla schermata di autenticazione.
     onLoggedOut() {
         this._currentUser = null;
         document.getElementById('auth-screen').classList.remove('hidden');
@@ -83,8 +80,7 @@ class AppView extends BaseView {
         document.getElementById('bottom-nav')?.classList.add('hidden');
     }
 
-    // Step 1 dell'OTP completato: passa il form dall'inserimento
-    // email/username all'inserimento del codice ricevuto via mail.
+    // Passa il form OTP dallo step email allo step codice.
     onCodeRequested(email, username = null) {
         this._pendingAuthEmail    = email;
         this._pendingAuthUsername = username;
@@ -95,8 +91,7 @@ class AppView extends BaseView {
         this.showSuccess('Codice inviato! Controlla la tua email.');
     }
 
-    // ── Section switching ─────────────────────────────────────
-
+    // Cambia sezione attiva (Collezione/Lista desideri) e aggiorna la UI.
     _switchSection(section) {
         if (this._activeSection === 'library' && section !== 'library') {
             this._lastShelfIndex = this._activeShelfIndex;
@@ -139,14 +134,22 @@ class AppView extends BaseView {
         this._loadCurrentView();
     }
 
+    // Ricarica la griglia libri in base a scaffale, stato e sezione correnti.
+    _loadCurrentView() {
+        const isWishlist = this._activeSection === 'wishlist';
+        const shelfId    = (!isWishlist && this._activeShelfIndex > 0)
+            ? (this._shelves[this._activeShelfIndex - 1]?.id ?? null)
+            : null;
+        this.bookPresenter.loadCollection(shelfId, this._activeStatus, isWishlist);
+    }
+
+    // Svuota il campo di ricerca.
     _clearSearchInput() {
         const input = document.getElementById('search-input');
         if (input) input.value = '';
     }
 
-    // Ricarica la griglia rispettando il contesto attuale: se una ricerca
-    // è ancora "attiva" (non annullata selezionando uno scaffale preciso),
-    // la rieseguiamo invece di tornare alla vista normale per scaffale.
+    // Ricarica la vista corrente, mantenendo una ricerca attiva se presente.
     _refreshView() {
         if (this._activeSearchQuery) {
             this._searchAll(this._activeSearchQuery);
@@ -155,17 +158,7 @@ class AppView extends BaseView {
         }
     }
 
-    _loadCurrentView() {
-        const isWishlist = this._activeSection === 'wishlist';
-        const shelfId    = (!isWishlist && this._activeShelfIndex > 0)
-            ? (this._shelves[this._activeShelfIndex - 1]?.id ?? null)
-            : null;
-        // Passa il filtro status (null = tutti)
-        this.bookPresenter.loadCollection(shelfId, this._activeStatus, isWishlist);
-    }
-
-    // ── Shelves ───────────────────────────────────────────────
-
+    // Riceve gli scaffali dal presenter e aggiorna pillole e select.
     renderShelves(shelves, allShelfPosition = 0) {
         this._shelves = shelves;
         this._allShelfPosition = allShelfPosition ?? 0;
@@ -173,6 +166,7 @@ class AppView extends BaseView {
         this._renderShelfSelectInModal();
     }
 
+    // Chiude il modal scaffale e ricarica la lista.
     onShelfSaved() {
         this._closeModal('modal-shelf');
         this.showSuccess('Scaffale salvato!');
@@ -180,6 +174,7 @@ class AppView extends BaseView {
         this._loadCurrentView();
     }
 
+    // Disegna le pillole degli scaffali, incluso il drag & drop per riordinarle.
     _renderShelfPills() {
         const track = document.getElementById('shelf-pills-track');
         if (!track) return;
@@ -191,7 +186,6 @@ class AppView extends BaseView {
                     data-shelf-index="${i + 1}" data-shelf-id="${s.id}" data-shelf-name="${this._esc(s.name)}">
                 ${this._esc(s.name)}
             </button>`);
-        // Inserisce "Tutti" nella posizione salvata invece di fissarla sempre per prima
         const insertAt = Math.max(0, Math.min(this._allShelfPosition, shelfPills.length));
         shelfPills.splice(insertAt, 0, allPill);
         const pills = shelfPills.join('');
@@ -202,10 +196,10 @@ class AppView extends BaseView {
 
         track.querySelectorAll('.shelf-pill[data-shelf-index]').forEach(pill => {
             pill.addEventListener('click', () => {
-                if (this._shelfDragEnabled) return; // in modalità riordino il click non naviga
+                if (this._shelfDragEnabled) return;
                 this._activeShelfIndex = parseInt(pill.dataset.shelfIndex);
                 this._lastShelfIndex   = this._activeShelfIndex;
-                this._activeStatus     = null;  // reset filtro al cambio scaffale
+                this._activeStatus     = null;
                 this._activeSearchQuery = null;
                 this._clearSearchInput();
                 track.querySelectorAll('.shelf-pill').forEach(p => p.classList.remove('active'));
@@ -216,7 +210,6 @@ class AppView extends BaseView {
             });
         });
 
-        // Drag & drop — include anche "Tutti" (id sentinella "0"), riordinabile come uno scaffale qualsiasi
         if (this._shelfDragEnabled) {
             track.querySelectorAll('.shelf-pill[data-shelf-id]').forEach(pill => {
                 pill.setAttribute('draggable', true);
@@ -255,12 +248,11 @@ class AppView extends BaseView {
         this._updateShelfCurrentName();
     }
 
+    // Salva il nuovo ordine degli scaffali dopo un drag & drop.
     async _saveShelfOrder() {
         const track = document.getElementById('shelf-pills-track');
         const ids   = [...track.querySelectorAll('.shelf-pill[data-shelf-id]')]
             .map(p => parseInt(p.dataset.shelfId));
-        // Ricorda lo scaffale attivo per posizione, non per indice, così restiamo
-        // sulla vista giusta anche se le posizioni sono cambiate.
         const activeShelfId = this._activeShelfIndex > 0
             ? this._shelves[this._activeShelfIndex - 1]?.id
             : null;
@@ -279,12 +271,13 @@ class AppView extends BaseView {
         }
     }
 
-
+    // Abilita o disabilita le frecce di navigazione tra scaffali.
     _updateArrows(total) {
         document.getElementById('shelf-prev').disabled = this._activeShelfIndex === 0;
         document.getElementById('shelf-next').disabled = this._activeShelfIndex >= total - 1;
     }
 
+    // Aggiorna il nome dello scaffale corrente mostrato in testata.
     _updateShelfCurrentName() {
         const nameEl = document.getElementById('shelf-current-name');
         if (!nameEl) return;
@@ -305,6 +298,7 @@ class AppView extends BaseView {
         }
     }
 
+    // Popola la select scaffali nel modal di scansione.
     _renderShelfSelectInModal() {
         const sel = document.getElementById('scan-shelf-select');
         if (!sel) return;
@@ -312,6 +306,7 @@ class AppView extends BaseView {
             this._shelves.map(s => `<option value="${s.id}">${this._esc(s.name)}</option>`).join('');
     }
 
+    // Apre il modal per creare o modificare uno scaffale.
     _openShelfModal(id, name) {
         document.getElementById('shelf-modal-title').textContent = id ? 'Modifica scaffale' : 'Nuovo scaffale';
         document.getElementById('shelf-name-input').value = name || '';
@@ -321,24 +316,24 @@ class AppView extends BaseView {
         this._openModal('modal-shelf');
     }
 
-    // ── Books ─────────────────────────────────────────────────
-
+    // Riceve libri e statistiche dal presenter e aggiorna la griglia.
     renderBooks(books, stats) {
         if (stats) this._renderStats(stats);
         this._renderBookGrid(books);
     }
 
+    // Attiva o disattiva lo stato di caricamento del pulsante di conferma scansione.
     setScanLoading(on) {
         const btn = document.getElementById('scan-confirm-btn');
         if (btn) btn.disabled = on;
     }
 
+    // Mostra l'anteprima del libro trovato durante scansione o ricerca ISBN.
     showBookPreview(book, source) {
         document.getElementById('scan-manual-btn').disabled = false;
         document.getElementById('scan-isbn-display').textContent = '—';
         if (!book) { this.showScanError('Libro non trovato'); return; }
         this._editingBook = book;
-        // Nasconde il blocco not-found se il libro viene trovato
         document.getElementById('scan-not-found')?.classList.add('hidden');
         document.getElementById('scan-error').textContent = '';
         const p = document.getElementById('scan-preview');
@@ -351,17 +346,18 @@ class AppView extends BaseView {
         p.querySelector('.preview-badge').textContent = badges[source] ?? '🌐 Online';
     }
 
+    // Mostra un errore di scansione e il pulsante per l'aggiunta manuale.
     showScanError(msg) {
         document.getElementById('scan-manual-btn').disabled = false;
         document.getElementById('scan-isbn-display').textContent = '—';
         document.getElementById('scan-error').textContent = msg;
-        // Mostra il pulsante "Aggiungi manualmente" solo quando il libro non è trovato
         const notFound = document.getElementById('scan-not-found');
         if (notFound) {
             notFound.classList.toggle('hidden', !msg);
         }
     }
 
+    // Legge i dati inseriti manualmente per un nuovo libro.
     getManualBookData() {
         return {
             isbn:           document.getElementById('manual-isbn').value.trim() || null,
@@ -373,6 +369,7 @@ class AppView extends BaseView {
         };
     }
 
+    // Chiude i modal di aggiunta, salva la serie se presente e ricarica la vista.
     onBookAdded(userBookId) {
         const seriesName   = document.getElementById('scan-series-name')?.value.trim()
                         || document.getElementById('manual-series-name')?.value.trim();
@@ -396,19 +393,20 @@ class AppView extends BaseView {
         this._loadCurrentView();
     }
 
+    // Chiude il modal recensione e ricarica la vista.
     onReviewSaved() {
         this._closeModal('modal-review');
         this.showSuccess('Recensione salvata!');
         this._loadCurrentView();
     }
 
+    // Chiude il modal recensione dopo l'eliminazione.
     onReviewDeleted() {
         this._closeModal('modal-review');
         this._loadCurrentView();
     }
 
-    // ── Rendering ─────────────────────────────────────────────
-
+    // Aggiorna le card statistiche ed evidenzia il filtro attivo.
     _renderStats(stats) {
         const isWishlist = this._activeSection === 'wishlist';
         document.getElementById('stats-library').classList.toggle('hidden', isWishlist);
@@ -422,7 +420,6 @@ class AppView extends BaseView {
             document.getElementById('stat-reading').textContent = stats.reading;
             document.getElementById('stat-read').textContent    = stats.read;
 
-            // Evidenzia la stat card attiva
             const map = {
                 null:           'stat-card--total',
                 'want_to_read': 'stat-card--want',
@@ -444,6 +441,7 @@ class AppView extends BaseView {
         }
     }
 
+    // Disegna la griglia dei libri, incluso il drag & drop per il riordino personalizzato.
     _renderBookGrid(books) {
         const grid = document.getElementById('book-grid');
         if (!books.length) {
@@ -461,7 +459,6 @@ class AppView extends BaseView {
                 this._openBookDetail(book);
             });
 
-        // Drag & drop — solo se abilitato dal pulsante "Personalizzato"
         if (this._dragEnabled) {
             card.setAttribute('draggable', true);
             card.addEventListener('dragstart', e => {
@@ -497,6 +494,7 @@ class AppView extends BaseView {
         });
     }
 
+    // Salva il nuovo ordine dei libri dopo un drag & drop.
     async _saveDragOrder() {
         const grid = document.getElementById('book-grid');
         const ids  = [...grid.querySelectorAll('.book-card')]
@@ -517,9 +515,9 @@ class AppView extends BaseView {
         }
     }
 
+    // Genera il markup HTML di una card libro.
     _bookCard(b) {
         const stars = b.rating ? '★'.repeat(b.rating) + '☆'.repeat(5 - b.rating) : '☆☆☆☆☆';
-        // Passiamo anche publisher, page_count, language al dataset per averli nel modal
         return `
         <article class="book-card" data-book='${JSON.stringify({
             id:             b.id,
@@ -550,8 +548,7 @@ class AppView extends BaseView {
         </article>`;
     }
 
-    // ── Book detail modal ─────────────────────────────────────
-
+    // Apre il modal di dettaglio libro e prova ad arricchirlo tramite ISBN.
     async _openBookDetail(book) {
         this._clearSearchInput();
         this._detailBook = book;
@@ -560,17 +557,14 @@ class AppView extends BaseView {
         this._renderDetailModal(book, details);
         this._openModal('modal-book-detail');
 
-        // Autocompila editore e ISBN dai dati globali del libro se non già salvati in details.
-        // I valori sono già visibili nel campo (fallback su book.*), ma vogliamo anche
-        // fare un lookup ISBN per arricchire i dati se mancanti.
         const isbn = (details.edition_isbn || book.isbn || '').replace(/[^0-9X\-]/gi, '').trim();
         if (isbn) {
             this._autofillEditionFromIsbn(isbn, details, book);
         }
     }
 
+    // Completa editore/ISBN mancanti nel dettaglio libro tramite lookup ISBN.
     async _autofillEditionFromIsbn(isbn, details, book) {
-        // Se editore e ISBN sono già in details non facciamo nulla
         const needsPublisher = !details.edition_publisher;
         const needsIsbn      = !details.edition_isbn;
         if (!needsPublisher && !needsIsbn) return;
@@ -589,14 +583,14 @@ class AppView extends BaseView {
                 isbnField.value = data.isbn;
             }
         } catch {
-            // Lookup fallito silenziosamente — i campi restano vuoti
         }
     }
 
+    // Costruisce il markup completo del modal di dettaglio libro.
     _renderDetailModal(book, details) {
         const isWishlist = this._activeSection === 'wishlist';
-        const userBookId = book.user_book_id ?? book.id;  // user_books.id → per saveDetails
-        const bookId     = book.id;                        // books.id → solo per riferimento nel DOM (data-book-id)
+        const userBookId = book.user_book_id ?? book.id;
+        const bookId     = book.id;
         const rating     = book.rating ?? 0;
 
         const isRead  = book.status === 'read';
@@ -668,8 +662,6 @@ class AppView extends BaseView {
                     </div>` : ''}
                 </div>
             </div>
-
-
 
             <!-- ── STATO (solo Collezione) ── -->
             ${!isWishlist ? `
@@ -855,14 +847,13 @@ class AppView extends BaseView {
         this._bindDetailEvents(book, details, userBookId, bookId);
     }
 
+    // Collega tutti gli event listener del modal di dettaglio libro.
     _bindDetailEvents(book, details, userBookId, bookId) {
         const modal = document.getElementById('modal-book-detail');
 
-        // Chiudi
         modal.querySelector('#book-detail-close')
             .addEventListener('click', () => this._closeModal('modal-book-detail'));
 
-        // ── Upload copertina ───────────────────────────────────
         const fileInput = modal.querySelector('#bd-cover-file-input');
         fileInput?.addEventListener('change', async () => {
             const file = fileInput.files[0];
@@ -880,7 +871,6 @@ class AppView extends BaseView {
             }
         });
 
-        // Rimuovi copertina
         modal.querySelector('#bd-cover-remove-btn')?.addEventListener('click', async () => {
             if (!confirm('Rimuovere la copertina?')) return;
             try {
@@ -893,7 +883,6 @@ class AppView extends BaseView {
             }
         });
 
-        // ── Modifica autore inline ─────────────────────────────
         const authorDisplay = modal.querySelector('#bd-author-display');
         const authorInput   = modal.querySelector('#bd-author-input');
         authorDisplay?.addEventListener('click', () => {
@@ -908,7 +897,6 @@ class AppView extends BaseView {
             authorInput.classList.add('hidden');
         });
 
-        // ── Progress bar live ──────────────────────────────────
         const cpInput  = modal.querySelector('#bd-current-page');
         const tpInput  = modal.querySelector('#bd-total-pages');
         const barFill  = modal.querySelector('.bd-bar-fill');
@@ -941,7 +929,6 @@ class AppView extends BaseView {
             });
         }
 
-        // ── Durata lettura live ────────────────────────────────
         const startInput  = modal.querySelector('#bd-started-at');
         const finishInput = modal.querySelector('#bd-finished-at');
         const durationEl  = modal.querySelector('#bd-duration');
@@ -951,18 +938,15 @@ class AppView extends BaseView {
             finishInput.addEventListener('change', upd);
         }
 
-        // ── Stato lettura: "Letto" → progress 100% ────────────
         modal.querySelectorAll('.bd-status-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 modal.querySelectorAll('.bd-status-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 if (btn.dataset.status === 'read') {
-                    // Letto → current_page = total_pages, progress 100%
                     if (cpInput && tpInput?.value) cpInput.value = tpInput.value;
                     cpInput?.setAttribute('readonly', true);
                     updateProgress(100);
                 } else {
-                    // Non letto → azzera current_page e sblocca input
                     if (cpInput) cpInput.value = '';
                     cpInput?.removeAttribute('readonly');
                     updateProgress(0);
@@ -970,7 +954,6 @@ class AppView extends BaseView {
             });
         });
 
-        // ── Stelle recensione ──────────────────────────────────
         let currentRating = book.rating ?? 0;
         const stars = modal.querySelectorAll('.bd-star');
         const paintStars = (n) => stars.forEach(s =>
@@ -985,14 +968,12 @@ class AppView extends BaseView {
             });
         });
 
-        // ── Contatore caratteri ────────────────────────────────
         const textArea  = modal.querySelector('#bd-review-text');
         const charCount = modal.querySelector('#bd-char-count');
         textArea?.addEventListener('input', () => {
             if (charCount) charCount.textContent = textArea.value.length;
         });
 
-        // ── Editor markdown con preview live ──────────────────
         const setupMdField = (taEl, previewEl) => {
             if (!taEl || !previewEl) return;
 
@@ -1010,7 +991,6 @@ class AppView extends BaseView {
             const showEditor = () => {
                 previewEl.style.display = 'none';
                 taEl.style.display = 'block';
-                // Inizializza MarkdownEditor solo la prima volta che la textarea diventa visibile
                 if (!editorSetup) {
                     editorSetup = true;
                     MarkdownEditor.setup(taEl, () => {
@@ -1023,7 +1003,6 @@ class AppView extends BaseView {
             previewEl.addEventListener('click', showEditor);
             taEl.addEventListener('blur', showPreview);
 
-            // Se non c'è contenuto, mostra subito la textarea con editor pronto
             if (!taEl.value.trim()) {
                 showEditor();
             } else {
@@ -1042,7 +1021,6 @@ class AppView extends BaseView {
         const taReview = modal.querySelector('#bd-review-text');
         const taNotes  = modal.querySelector('#bd-personal-notes');
 
-        // ── Sposta ────────────────────────────────────────────
         modal.querySelector('#detail-move-wishlist')?.addEventListener('click', async () => {
             await api.updateBook(userBookId, { is_wishlist: true });
             this._closeModal('modal-book-detail');
@@ -1056,7 +1034,6 @@ class AppView extends BaseView {
             this._refreshView();
         });
 
-        // ── Rimuovi ───────────────────────────────────────────
         modal.querySelector('#detail-remove-btn').addEventListener('click', async () => {
             if (!confirm('Rimuovere questo libro dalla collezione?')) return;
             await this.bookPresenter.removeBook(userBookId);
@@ -1064,18 +1041,15 @@ class AppView extends BaseView {
             this._refreshView();
         });
 
-        // ── Salva ─────────────────────────────────────────────
         modal.querySelector('#detail-save-btn').addEventListener('click', async () => {
             const saveBtn = modal.querySelector('#detail-save-btn');
             saveBtn.disabled = true;
             saveBtn.textContent = 'Salvataggio…';
 
             try {
-                // 1. book_details (usa userBookId = user_books.id)
                 const totalPages  = tpInput?.value || modal.querySelector('#bd-edition-pages')?.value || null;
                 const currentPage = cpInput?.value || null;
 
-                // Usa document per sicurezza — i campi stanno dentro .bd-modal-body
                 const $ = (id) => document.getElementById(id)?.value ?? null;
                 const $v = (id) => document.getElementById(id)?.value || null;
 
@@ -1094,11 +1068,10 @@ class AppView extends BaseView {
                     edition_label:     $v('bd-edition-label'),
                     edition_format:    $v('bd-edition-format'),
                     edition_isbn:      $v('bd-edition-isbn'),
-                    personal_notes:    $('bd-personal-notes'),  // ?? null: stringa vuota è valida
+                    personal_notes:    $('bd-personal-notes'),
                 };
                 await this.bookDetailPresenter.saveDetails(userBookId, detailPayload);
 
-                // 2. Recensione (l'endpoint vuole user_books.id, risolve internamente books.id)
                 const reviewText = modal.querySelector('#bd-review-text')?.value?.trim() || null;
                 if (currentRating > 0 || reviewText) {
                     await api.upsertReview(userBookId, { rating: currentRating, review_text: reviewText });
@@ -1106,7 +1079,6 @@ class AppView extends BaseView {
                     await api.deleteReview(userBookId);
                 }
 
-                // 3. Stato / scaffale — l'endpoint vuole user_books.id
                 const isWishlist = this._activeSection === 'wishlist';
                 if (!isWishlist) {
                     const status  = modal.querySelector('.bd-status-btn.active')?.dataset.status;
@@ -1117,7 +1089,6 @@ class AppView extends BaseView {
                     if (Object.keys(updates).length) await api.updateBook(userBookId, updates);
                 }
 
-                // 4. Autore — aggiorna books.author se modificato
                 const author = modal.querySelector('#bd-author-input')?.value.trim() || null;
                 if (author && author !== book.author) {
                     await api.patchBook(userBookId, { author });
@@ -1136,15 +1107,12 @@ class AppView extends BaseView {
             }
         });
 
-        // Backdrop
         modal.addEventListener('click', e => {
             if (e.target === modal) this._closeModal('modal-book-detail');
         });
     }
 
-
-    // ── Reset scan modal ──────────────────────────────────────
-
+    // Riporta il modal di scansione allo stato iniziale.
     _resetScanModal() {
         this._editingBook = null;
         document.getElementById('scan-preview')?.classList.add('hidden');
@@ -1160,6 +1128,7 @@ class AppView extends BaseView {
         document.getElementById('scan-series-volume').value = '';
     }
 
+    // Riporta il modal di inserimento manuale allo stato iniziale.
     _resetManualModal() {
         ['manual-title','manual-author','manual-publisher','manual-year','manual-isbn']
             .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -1169,25 +1138,25 @@ class AppView extends BaseView {
         document.getElementById('manual-series-volume').value = '';
     }
 
+    // Svuota il contenitore delle categorie.
     _renderCategoryCheckboxes() {
         const wrap = document.getElementById('scan-cats-wrap');
         if (wrap) wrap.innerHTML = '';
     }
 
-    // ── Scanner ───────────────────────────────────────────────
-
+    // Apre il modal di scansione ISBN.
     _openScanModal() {
         this._resetScanModal();
         this._openModal('modal-scan');
         this._renderShelfSelectInModal();
     }
 
+    // Apre il modal di inserimento manuale, precompilando l'ISBN se presente.
     _openManualModal(prefillIsbn = '') {
         this._resetManualModal();
         const sel = document.getElementById('manual-shelf-select');
         if (sel) sel.innerHTML = `<option value="">— Nessuno —</option>` +
             this._shelves.map(s => `<option value="${s.id}">${this._esc(s.name)}</option>`).join('');
-        // Precompila ISBN se proveniente dallo scanner
         if (prefillIsbn) {
             const isbnField = document.getElementById('manual-isbn');
             if (isbnField) isbnField.value = prefillIsbn;
@@ -1195,16 +1164,13 @@ class AppView extends BaseView {
         this._openModal('modal-manual');
     }
 
+    // Avvia fotocamera e ciclo di rilevazione ISBN (BarcodeDetector nativo con fallback OCR).
     _startScanner() {
-        const video = document.getElementById('scanner-video');
-        const hints = new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-            ZXing.BarcodeFormat.EAN_13,
-            ZXing.BarcodeFormat.EAN_8,
-        ]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-        const codeReader = new ZXing.BrowserMultiFormatReader(hints, 500);
-        this._codeReader = codeReader;
+        const video    = document.getElementById('scanner-video');
+        const statusEl = document.getElementById('scan-debug-status');
+        const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+
+        setStatus('Avvio scanner…');
 
         navigator.mediaDevices.getUserMedia({
             video: {
@@ -1217,37 +1183,21 @@ class AppView extends BaseView {
             video.srcObject = stream;
             video.play();
 
-            // Forza autofocus su Android/Xiaomi
             const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities?.() ?? {};
-            const constraints = { advanced: [] };
-            if (capabilities.focusMode?.includes('continuous')) {
-                constraints.advanced.push({ focusMode: 'continuous' });
-            }
-            if (capabilities.focusDistance) {
-                constraints.advanced.push({ focusDistance: capabilities.focusDistance.min });
-            }
-            if (constraints.advanced.length) {
-                track.applyConstraints(constraints).catch(() => {});
-            }
-
-            // Lettura in tempo reale
-            codeReader.decodeFromStream(stream, video, (result, err) => {
-                if (result) {
-                    const code = result.getText();
-                    document.getElementById('scan-isbn-display').textContent = code;
-                    document.getElementById('scan-manual-isbn').value = code;
-                    this.bookPresenter.lookupIsbn(code);
-                    codeReader.reset();
-
-                    // Torna allo stato iniziale: nascondi video, mostra bottone fotocamera
-                    this._stopScanner();
-                    document.getElementById('scan-camera-section').classList.add('hidden');
-                    document.getElementById('scan-method-choice').classList.remove('hidden');
+            try {
+                const capabilities = track.getCapabilities?.() ?? {};
+                const constraints = { advanced: [] };
+                if (capabilities.focusMode?.includes('continuous')) {
+                    constraints.advanced.push({ focusMode: 'continuous' });
                 }
-            });
+                if (capabilities.focusDistance) {
+                    constraints.advanced.push({ focusDistance: capabilities.focusDistance.min });
+                }
+                if (constraints.advanced.length) {
+                    track.applyConstraints(constraints).catch(() => {});
+                }
+            } catch (_) {}
 
-            // Tap per mettere a fuoco
             video.addEventListener('click', async (e) => {
                 try {
                     const rect = video.getBoundingClientRect();
@@ -1262,74 +1212,194 @@ class AppView extends BaseView {
                 } catch (_) {}
             });
 
-            // Scatta foto e leggi con ZXing sull'immagine
-            document.getElementById('scan-capture-btn').addEventListener('click', async () => {
-                const canvas = document.getElementById('scan-canvas');
-                const ctx    = canvas.getContext('2d');
-                canvas.width  = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0);
+            let imageCapture = null;
+            if (window.ImageCapture) {
+                try { imageCapture = new ImageCapture(track); } catch (_) { imageCapture = null; }
+            }
 
-                document.getElementById('scan-isbn-display').textContent = '⏳ Lettura…';
+            let barcodeDetector = null;
+            if (window.BarcodeDetector) {
+                try { barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8'] }); }
+                catch (_) { barcodeDetector = null; }
+            }
 
-                // Prova prima sull'immagine intera, poi su crop centrale
-                const attempts = [
-                    { x: 0, y: 0, w: canvas.width, h: canvas.height },
-                    { x: Math.floor(canvas.width * 0.1), y: Math.floor(canvas.height * 0.3),
-                    w: Math.floor(canvas.width * 0.8), h: Math.floor(canvas.height * 0.5) },
-                    { x: Math.floor(canvas.width * 0.2), y: Math.floor(canvas.height * 0.5),
-                    w: Math.floor(canvas.width * 0.6), h: Math.floor(canvas.height * 0.4) },
-                ];
+            setStatus('Scanner pronto');
 
-                for (const crop of attempts) {
-                    try {
-                        const cropCanvas = document.createElement('canvas');
-                        cropCanvas.width  = crop.w;
-                        cropCanvas.height = crop.h;
-                        cropCanvas.getContext('2d').drawImage(canvas, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+            const frameCanvas = document.createElement('canvas');
+            const frameCtx    = frameCanvas.getContext('2d', { willReadFrequently: true });
+            let busy = false;
+            let attemptCount = 0;
 
-                        const imageData = cropCanvas.getContext('2d').getImageData(0, 0, crop.w, crop.h);
-                        const staticHints = new Map();
-                        staticHints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-                            ZXing.BarcodeFormat.EAN_13,
-                            ZXing.BarcodeFormat.EAN_8,
-                        ]);
-                        staticHints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-                        const reader = new ZXing.MultiFormatReader(staticHints);
-                        const luminanceSource = new ZXing.RGBLuminanceSource(imageData.data, crop.w, crop.h);
-                        const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
-                        const result = reader.decode(binaryBitmap);
-                        const code = result.getText();
-                        document.getElementById('scan-isbn-display').textContent = code;
-                        document.getElementById('scan-manual-isbn').value = code;
-                        this.bookPresenter.lookupIsbn(code);
-                        codeReader.reset();
-                        return; // trovato, esci
-                    } catch (e) {
-                        // prova il crop successivo
+            let ocrWorkerPromise = null;
+            const getOcrWorker = async () => {
+                if (this._ocrWorker) return this._ocrWorker;
+                if (!ocrWorkerPromise) {
+                    ocrWorkerPromise = (async () => await Tesseract.createWorker('eng'))();
+                }
+                this._ocrWorker = await ocrWorkerPromise;
+                return this._ocrWorker;
+            };
+
+            const withTimeout = (promise, ms, label) => Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout (${ms}ms) su ${label}`)), ms)),
+            ]);
+
+            const isValidEan13 = (digits) => {
+                if (!/^\d{13}$/.test(digits)) return false;
+                let sum = 0;
+                for (let i = 0; i < 12; i++) sum += parseInt(digits[i], 10) * (i % 2 === 0 ? 1 : 3);
+                return (10 - (sum % 10)) % 10 === parseInt(digits[12], 10);
+            };
+
+            const extractValidEan13 = (rawText) => {
+                if (!rawText) return null;
+                const groups = rawText.match(/[0-9][0-9\s-]{9,}[0-9]/g) || [];
+                for (const group of groups) {
+                    const digitsOnly = group.replace(/[^0-9]/g, '');
+                    for (let i = 0; i + 13 <= digitsOnly.length; i++) {
+                        const candidate = digitsOnly.slice(i, i + 13);
+                        if (isValidEan13(candidate)) return candidate;
                     }
                 }
+                return null;
+            };
 
-                document.getElementById('scan-isbn-display').textContent = '—';
-                this.showError('ISBN non trovato — avvicinati al codice e riprova');
-            });
+            const decodeCanvasOcr = async (canvas) => {
+                try {
+                    const worker = await withTimeout(getOcrWorker(), 15000, 'inizializzazione OCR');
+                    const crop = {
+                        x: Math.floor(canvas.width * 0.05), y: Math.floor(canvas.height * 0.25),
+                        w: Math.floor(canvas.width * 0.9),  h: Math.floor(canvas.height * 0.6),
+                    };
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width  = crop.w;
+                    cropCanvas.height = crop.h;
+                    cropCanvas.getContext('2d').drawImage(canvas, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
 
-        }).catch(err => console.error('Camera error:', err));
+                    const { data } = await withTimeout(worker.recognize(cropCanvas), 15000, 'lettura OCR');
+                    const code = extractValidEan13(data.text);
+                    return code ? { code } : { error: new Error('OCR: nessun ISBN valido nel testo letto') };
+                } catch (e) {
+                    return { error: e };
+                }
+            };
+
+            const onCode = (code) => {
+                document.getElementById('scan-isbn-display').textContent = code;
+                document.getElementById('scan-manual-isbn').value = code;
+                this.bookPresenter.lookupIsbn(code);
+                this._stopScanner();
+                document.getElementById('scan-camera-section').classList.add('hidden');
+                document.getElementById('scan-method-choice').classList.remove('hidden');
+            };
+
+            const decodeCanvasNative = async (canvas) => {
+                if (!barcodeDetector) return { error: new Error('BarcodeDetector non disponibile su questo browser') };
+                try {
+                    const results = await barcodeDetector.detect(canvas);
+                    return results.length ? { code: results[0].rawValue } : { error: new Error('BarcodeDetector: nessun codice nel frame') };
+                } catch (e) {
+                    return { error: e };
+                }
+            };
+
+            const decodeCanvasZbar = async (canvas) => {
+                if (!window.zbarWasm) return { error: new Error('zbar-wasm non disponibile') };
+                try {
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const symbols = await window.zbarWasm.scanImageData(imageData);
+                    const match = symbols.find(s => /EAN13|EAN8|ISBN/i.test(s.typeName));
+                    return match ? { code: match.decode() } : { error: new Error('zbar-wasm: nessun codice nel frame') };
+                } catch (e) {
+                    return { error: e };
+                }
+            };
+
+            const primaryDecode = barcodeDetector ? decodeCanvasNative : decodeCanvasZbar;
+
+            const processFrame = async (canvas) => {
+                const primaryOutcome = await primaryDecode(canvas);
+                if (primaryOutcome.code) return primaryOutcome;
+                return decodeCanvasOcr(canvas);
+            };
+
+            const reportOutcome = (outcome, w, h) => {
+                attemptCount++;
+                if (outcome.code) { onCode(outcome.code); return; }
+                if (outcome.error) console.error('Scan attempt error:', outcome.error);
+                setStatus(attemptCount <= 2
+                    ? 'Rilevazione in corso…'
+                    : `Rilevazione in corso… (tentativo ${attemptCount}${outcome.error ? ` — ${outcome.error.message}` : ''})`);
+                busy = false;
+            };
+
+            this._scanInterval = setInterval(() => {
+                if (busy) return;
+                busy = true;
+                setStatus('Rilevazione in corso…');
+
+                if (imageCapture) {
+                    imageCapture.takePhoto()
+                        .then(blob => createImageBitmap(blob))
+                        .then(async bitmap => {
+                            frameCanvas.width  = bitmap.width;
+                            frameCanvas.height = bitmap.height;
+                            frameCtx.drawImage(bitmap, 0, 0);
+                            bitmap.close?.();
+                            reportOutcome(await processFrame(frameCanvas), frameCanvas.width, frameCanvas.height);
+                        })
+                        .catch(err => {
+                            attemptCount++;
+                            console.error('Scan capture error:', err);
+                            setStatus('Rilevazione in corso…');
+                            busy = false;
+                        });
+                    return;
+                }
+
+                (async () => {
+                    try {
+                        if (video.readyState < 2 || !video.videoWidth) {
+                            busy = false;
+                            return;
+                        }
+                        frameCanvas.width  = video.videoWidth;
+                        frameCanvas.height = video.videoHeight;
+                        frameCtx.drawImage(video, 0, 0);
+                        reportOutcome(await processFrame(frameCanvas), frameCanvas.width, frameCanvas.height);
+                    } catch (loopErr) {
+                        console.error('Scan loop error:', loopErr);
+                        setStatus('Rilevazione in corso…');
+                        busy = false;
+                    }
+                })();
+            }, 700);
+
+        }).catch(err => {
+            setStatus(`Errore fotocamera: ${err.name || '?'}: ${err.message || err}`);
+            console.error('Camera error:', err);
+        });
     }
 
+    // Ferma fotocamera, ciclo di scansione e worker OCR.
     _stopScanner() {
-        if (this._codeReader) {
-            this._codeReader.reset();
-            this._codeReader = null;
+        if (this._scanInterval) {
+            clearInterval(this._scanInterval);
+            this._scanInterval = null;
         }
         if (this._stream) {
             this._stream.getTracks().forEach(t => t.stop());
             this._stream = null;
         }
+        if (this._ocrWorker) {
+            this._ocrWorker.terminate().catch(() => {});
+            this._ocrWorker = null;
+        }
     }
 
-    // ── Helpers privati ───────────────────────────────────────
-
+    // Effettua l'escape HTML di una stringa.
     _esc(str) {
         if (str == null) return '';
         return String(str)
@@ -1340,6 +1410,7 @@ class AppView extends BaseView {
             .replace(/'/g, '&#39;');
     }
 
+    // Restituisce l'etichetta leggibile per un formato di edizione.
     _formatLabel(format) {
         const map = {
             paperback:  '📖 Brossura',
@@ -1351,6 +1422,7 @@ class AppView extends BaseView {
         return map[format] ?? format;
     }
 
+    // Calcola il testo di durata lettura tra due date.
     _durationText(startStr, finishStr) {
         if (!startStr || !finishStr) return '';
         const s = new Date(startStr), f = new Date(finishStr);
@@ -1364,8 +1436,7 @@ class AppView extends BaseView {
         return `⏱ Letto in circa ${months} mes${months === 1 ? 'e' : 'i'}`;
     }
 
-    // ── Ricerca globale ───────────────────────────────────────
-
+    // Esegue la ricerca globale e aggiorna la griglia.
     async _searchAll(query) {
         try {
             this._activeSearchQuery = query;
@@ -1382,6 +1453,7 @@ class AppView extends BaseView {
         }
     }
 
+    // Disegna i risultati di ricerca.
     _renderSearchResults(books, query) {
         const grid = document.getElementById('book-grid');
 
@@ -1438,50 +1510,30 @@ class AppView extends BaseView {
         });
     }
 
-    // Naviga alla sezione e allo scaffale del libro, poi apre il modal
+    // Naviga allo scaffale del libro e ne apre il dettaglio.
     async _navigateToBook(book) {
         const section = book.is_wishlist ? 'wishlist' : 'library';
 
-        // Cambia sezione se necessario
-        // if (this._activeSection !== section) {
-        //     this._activeSection = section;
-        //     document.querySelectorAll('.nav-section').forEach(el =>
-        //         el.classList.toggle('active', el.dataset.section === section));
-        //     const isWishlist = section === 'wishlist';
-        //     document.getElementById('shelf-pills').classList.toggle('hidden', isWishlist);
-        //     document.getElementById('shelf-arrows').classList.toggle('hidden', isWishlist);
-        //     document.getElementById('section-header').textContent =
-        //         isWishlist ? '🔖 Lista desideri' : 'Collezione';
-        // }
-
-        // Porta allo scaffale corretto (solo in Collezione)
         if (!book.is_wishlist && book.shelf_id) {
             const idx = this._shelves.findIndex(s => s.id == book.shelf_id);
             if (idx !== -1) {
-                this._activeShelfIndex = idx + 1; // +1 perché 0 = "Tutti"
+                this._activeShelfIndex = idx + 1;
                 this._lastShelfIndex   = this._activeShelfIndex;
             }
         } else if (!book.is_wishlist && !book.shelf_id) {
-            // Nessuno scaffale → "Tutti"
             this._activeShelfIndex = 0;
             this._lastShelfIndex   = 0;
         }
 
-        // Svuota la ricerca e aggiorna la griglia con la vista corretta
         this._clearSearchInput();
         this._renderShelfPills();
         this._loadCurrentView();
 
-        // Apre la scheda dopo un tick — lascia il tempo alla griglia di aggiornarsi
         await this._openBookDetail(book);
     }
 
-    // ── Events statici ────────────────────────────────────────
-
+    // Collega tutti gli event listener statici dell'interfaccia.
     _bindStaticEvents() {
-        // ── Auth: step 1 — richiesta codice OTP ─────────────────
-        // Serve un form con: #auth-email, #auth-username (solo registrazione,
-        // dentro #auth-username-group), pulsante submit dentro #auth-form-request.
         document.getElementById('auth-form-request')?.addEventListener('submit', async e => {
             e.preventDefault();
             const isLogin = document.getElementById('auth-mode').dataset.mode === 'login';
@@ -1497,9 +1549,6 @@ class AppView extends BaseView {
             }
         });
 
-        // ── Auth: step 2 — verifica codice ricevuto via email ───
-        // Serve un form con #auth-code dentro #auth-form-verify, e un
-        // pulsante #auth-back-btn per tornare allo step 1 (es. email sbagliata).
         document.getElementById('auth-form-verify')?.addEventListener('submit', async e => {
             e.preventDefault();
             const code = document.getElementById('auth-code').value.trim();
@@ -1516,7 +1565,6 @@ class AppView extends BaseView {
             document.getElementById('auth-code').value = '';
         });
 
-        // Toggle login/registrazione
         document.getElementById('auth-toggle').addEventListener('click', () => {
             const el   = document.getElementById('auth-mode');
             const mode = el.dataset.mode === 'login' ? 'register' : 'login';
@@ -1527,7 +1575,6 @@ class AppView extends BaseView {
         });
         document.getElementById('btn-logout').addEventListener('click', () => this.authPresenter.logout());
 
-        // Stat card come filtro status
         const statFilters = [
             { id: 'stat-total',   status: null },
             { id: 'stat-want',    status: 'want_to_read' },
@@ -1536,18 +1583,15 @@ class AppView extends BaseView {
         ];
         statFilters.forEach(({ id, status }) => {
             document.getElementById(id)?.closest('.stat-card')?.addEventListener('click', () => {
-                if (this._activeSection === 'wishlist') return; // non applicabile in wishlist
-                // Toggle: se già attivo, deseleziona
+                if (this._activeSection === 'wishlist') return;
                 this._activeStatus = (this._activeStatus === status) ? null : status;
                 this._loadCurrentView();
             });
         });
 
-        // Nav sections
         document.querySelectorAll('.nav-section').forEach(el =>
             el.addEventListener('click', () => this._switchSection(el.dataset.section)));
 
-        // Carousel arrows
         document.getElementById('shelf-prev').addEventListener('click', () => {
             if (this._activeShelfIndex > 0) {
                 this._activeShelfIndex--;
@@ -1567,7 +1611,6 @@ class AppView extends BaseView {
             }
         });
 
-        // Swipe orizzontale per cambiare scaffale su mobile
         let touchStartX = 0;
         let touchStartY = 0;
         const mainContent = document.querySelector('.main-content');
@@ -1593,7 +1636,7 @@ class AppView extends BaseView {
                 this._renderShelfPills();
                 this._loadCurrentView();
                 grid.classList.remove('book-grid--slide-left', 'book-grid--slide-right');
-                void grid.offsetWidth; // forza reflow
+                void grid.offsetWidth;
                 grid.classList.add('book-grid--slide-right');
             } else if (dx > 0 && this._activeShelfIndex > 0) {
                 this._activeShelfIndex--;
@@ -1609,19 +1652,16 @@ class AppView extends BaseView {
             }
         }, { passive: true });
 
-        // Search — globale su tutta la collezione
         let searchTimer;
         document.getElementById('search-input').addEventListener('input', e => {
             clearTimeout(searchTimer);
             const q = e.target.value.trim();
             if (!q) {
-                // Query vuota: resta sui risultati di ricerca finché non si seleziona uno scaffale
                 return;
             }
             searchTimer = setTimeout(() => this._searchAll(q), 350);
         });
 
-        // Pulsante aggiungi
         document.getElementById('btn-scan').addEventListener('click', () => this._openModal('modal-add-choice'));
         document.getElementById('btn-open-scan').addEventListener('click', () => {
             this._closeModal('modal-add-choice');
@@ -1632,7 +1672,6 @@ class AppView extends BaseView {
             this._openManualModal();
         });
 
-        // Destination choice — scan modal
         document.querySelectorAll('.destination-btn:not(.manual-dest-btn)').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.destination-btn:not(.manual-dest-btn)').forEach(b => b.classList.remove('active'));
@@ -1641,7 +1680,6 @@ class AppView extends BaseView {
             });
         });
 
-        // Destination choice — manual modal
         document.querySelectorAll('.manual-dest-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.manual-dest-btn').forEach(b => b.classList.remove('active'));
@@ -1657,16 +1695,13 @@ class AppView extends BaseView {
             document.getElementById('scan-manual-btn').disabled = true;
             this.bookPresenter.lookupIsbn(isbn);
         });
-        // Scelta metodo nel modal scan
         document.getElementById('scan-use-camera').addEventListener('click', () => {
             document.getElementById('scan-method-choice').classList.add('hidden');
             document.getElementById('scan-camera-section').classList.remove('hidden');
             this._startScanner();
         });
 
-        // Pulsante "Aggiungi manualmente" nel blocco not-found del modal scan
         document.getElementById('scan-add-manually-btn')?.addEventListener('click', () => {
-            // Prende l'ISBN già digitato e lo passa al modal manuale
             const isbn = document.getElementById('scan-manual-isbn')?.value.trim()
                       || document.getElementById('scan-isbn-display')?.textContent?.trim();
             this._closeModal('modal-scan');
@@ -1678,7 +1713,6 @@ class AppView extends BaseView {
             if (e.key === 'Enter') document.getElementById('scan-manual-btn').click();
         });
 
-        // Confirm scan
         document.getElementById('scan-confirm-btn').addEventListener('click', async () => {
             if (!this._editingBook) { this.showError('Cerca prima un libro tramite ISBN'); return; }
             const dest       = document.querySelector('.destination-btn:not(.manual-dest-btn).active')?.dataset.dest ?? 'wishlist';
@@ -1691,7 +1725,6 @@ class AppView extends BaseView {
             this._closeModal('modal-scan'); this._stopScanner(); this._resetScanModal();
         });
 
-        // Confirm manual
         document.getElementById('manual-confirm-btn').addEventListener('click', async () => {
             const bookData = this.getManualBookData();
             if (!bookData.title) { this.showError('Il titolo è obbligatorio'); return; }
@@ -1705,14 +1738,12 @@ class AppView extends BaseView {
             this._closeModal('modal-manual'); this._resetManualModal();
         });
 
-        // Click sul nome scaffale → apre modal
         document.getElementById('shelf-current-name').addEventListener('click', () => {
             const nameEl = document.getElementById('shelf-current-name');
             if (!nameEl.dataset.shelfId) return;
             this._openShelfModal(nameEl.dataset.shelfId, nameEl.dataset.shelfName);
         });
 
-        // Shelf modal
         document.getElementById('shelf-save-btn').addEventListener('click', () => {
             const name   = document.getElementById('shelf-name-input').value.trim();
             const editId = document.getElementById('shelf-save-btn').dataset.editId;
@@ -1732,7 +1763,6 @@ class AppView extends BaseView {
             this._lastShelfIndex   = 0;
         });
 
-        // Review modal standalone
         document.querySelectorAll('.star-rating .star').forEach(star => {
             star.addEventListener('click', () => {
                 const val = parseInt(star.dataset.value);
@@ -1751,7 +1781,6 @@ class AppView extends BaseView {
         document.getElementById('review-cancel-btn')?.addEventListener('click', () =>
             this._closeModal('modal-review'));
 
-        // Backdrop per modali statici
         ['modal-scan','modal-manual','modal-shelf','modal-review','modal-add-choice','modal-reorder'].forEach(id => {
             const m = document.getElementById(id);
             m?.addEventListener('click', e => {
@@ -1763,7 +1792,6 @@ class AppView extends BaseView {
             });
         });
         
-        // Menu hamburger
         const hamburgerBtn  = document.getElementById('hamburger-btn');
         const hamburgerMenu = document.getElementById('hamburger-menu');
         hamburgerBtn?.addEventListener('click', (e) => {
@@ -1821,7 +1849,6 @@ class AppView extends BaseView {
             this._renderShelfPills();
         });
 
-        // Toggle visibilità password
         document.querySelectorAll('.toggle-password').forEach(btn => {
             btn.addEventListener('click', () => {
                 const input = document.getElementById(btn.dataset.target);
@@ -1832,10 +1859,10 @@ class AppView extends BaseView {
         });
     }
 
+    // Applica il tema chiaro o scuro e aggiorna le copertine mancanti.
     _applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme === 'night' ? 'night' : 'default');
         localStorage.setItem('sageshelf-theme', theme);
-        // Aggiorna le copertine mancanti
         const noCover = theme === 'night'
             ? 'assets/img/no-cover-black.jpg'
             : 'assets/img/no-cover.jpg';
@@ -1844,16 +1871,19 @@ class AppView extends BaseView {
         });
     }
 
+    // Applica il tema salvato in locale all'avvio.
     _loadTheme() {
         const saved = localStorage.getItem('sageshelf-theme');
         if (saved === 'night') this._applyTheme('night');
     }
 
+    // Apre il modal di scelta ordinamento libri.
     _openReorderModal() {
         const modal = document.getElementById('modal-reorder');
         if (!modal) return;
         this._openModal('modal-reorder');
     }
+    // Ordina i libri dello scaffale corrente secondo il criterio scelto.
     async _sortBooks(by) {
         const shelfId = this._activeShelfIndex > 0
             ? this._shelves[this._activeShelfIndex - 1]?.id

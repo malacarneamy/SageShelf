@@ -34,13 +34,17 @@ class BookPresenter {
         }
 
         // Le prime 3 fonti vengono interrogate IN PARALLELO
+        $googleKey = env('GOOGLE_BOOKS_API_KEY');
         $requests = [];
         foreach ($candidates as $c) {
-            $requests["googlebooks:{$c}"]        = "https://www.googleapis.com/books/v1/volumes?q=isbn:{$c}";
+            $gbUrl = "https://www.googleapis.com/books/v1/volumes?q=isbn:{$c}";
+            if ($googleKey) $gbUrl .= '&key=' . urlencode($googleKey);
+            $requests["googlebooks:{$c}"]        = $gbUrl;
             $requests["openlibrary:{$c}"]         = "https://openlibrary.org/api/books?bibkeys=ISBN:{$c}&format=json&jscmd=data";
             $requests["openlibrary-search:{$c}"]  = "https://openlibrary.org/search.json?isbn={$c}&limit=1";
         }
-        $responses = httpGetMulti($requests);
+        // Timeout più alto: Open Library può essere più lenta dei 6s di default.
+        $responses = httpGetMulti($requests, 10);
 
         // Ordine di priorità delle FONTI
         $parsers = [
@@ -175,7 +179,7 @@ class BookPresenter {
 
     private function _lookupLibraryThing(string $isbn): ?array {
         $url  = "https://openlibrary.org/isbn/{$isbn}.json";
-        $json = httpGet($url, 4);
+        $json = httpGet($url, 8);
         if (!$json) return null;
         $edition = json_decode($json, true);
         if (empty($edition['title'])) return null;
@@ -183,7 +187,7 @@ class BookPresenter {
         // Recupera autore tramite works se disponibile
         $author = null;
         if (!empty($edition['authors'][0]['key'])) {
-            $authorJson = httpGet("https://openlibrary.org{$edition['authors'][0]['key']}.json", 4);
+            $authorJson = httpGet("https://openlibrary.org{$edition['authors'][0]['key']}.json", 8);
             if ($authorJson) {
                 $authorData = json_decode($authorJson, true);
                 $author = $authorData['name'] ?? null;

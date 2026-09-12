@@ -113,13 +113,25 @@ function requireAuth(): int {
 }
 
 // ── HTTP helper (cURL) ───────────────────────────────────────
+
+/**
+ * User-Agent descrittivo per le chiamate a API esterne (Google Books,
+ * Open Library, ecc.). Alcune di queste API (Open Library in particolare)
+ * chiedono nella loro policy un UA con un contatto reale: se APP_CONTACT
+ * è impostato in .env viene incluso, altrimenti resta generico.
+ */
+function sageShelfUserAgent(): string {
+    $contact = env('APP_CONTACT'); // es. APP_CONTACT=mario.rossi@esempio.it nel .env
+    return $contact ? "SageShelf/1.0 (+{$contact})" : 'SageShelf/1.0';
+}
+
 function httpGet(string $url, int $timeoutSeconds = 8): ?string {
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'SageShelf/1.0');
+    curl_setopt($ch, CURLOPT_USERAGENT, sageShelfUserAgent());
     $result = curl_exec($ch);
     curl_close($ch);
     return $result ?: null;
@@ -142,7 +154,7 @@ function httpGetMulti(array $urls, int $timeoutSeconds = 6): array {
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_USERAGENT, 'SageShelf/1.0');
+        curl_setopt($ch, CURLOPT_USERAGENT, sageShelfUserAgent());
         curl_multi_add_handle($mh, $ch);
         $handles[$key] = $ch;
     }

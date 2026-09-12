@@ -12,7 +12,15 @@
   <link rel="icon" type="image/jpeg" href="assets/img/logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script type="module">
+    // zbar-wasm: motore di lettura barcode via WebAssembly, usato come
+    // ripiego su Safari/iOS (dove l'API nativa BarcodeDetector non esiste).
+    // È un modulo ES, quindi lo esponiamo su window per usarlo dal resto
+    // del codice (script "classici", non moduli).
+    import * as zbarWasm from 'https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.11.0/dist/index.js';
+    window.zbarWasm = zbarWasm;
+  </script>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/auth.css">
   <link rel="stylesheet" href="css/navbar.css">
@@ -165,8 +173,7 @@
     <!-- Sezione fotocamera (nascosta di default) -->
     <div id="scan-camera-section" class="hidden">
       <video id="scanner-video" autoplay muted playsinline></video>
-      <button id="scan-capture-btn" class="btn-capture">📸 Scatta e leggi ISBN</button>
-      <canvas id="scan-canvas" style="display:none"></canvas>
+      <p id="scan-debug-status" style="font-size:.75rem;color:var(--text-muted);margin:.3rem 0 0;text-align:center"></p>
     </div>
     <div class="scan-manual" style="margin-top:.6rem">
       <span style="font-family:monospace;font-size:.85rem;color:var(--accent);white-space:nowrap">ISBN: <span id="scan-isbn-display">—</span></span>
