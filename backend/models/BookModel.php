@@ -46,7 +46,8 @@ class BookModel {
         $sql = '
             SELECT
                 b.id, b.isbn, b.title, b.author,
-                b.publisher, b.published_year, b.cover_url,
+                b.publisher, b.published_year,
+                COALESCE(ub.custom_cover_url, b.cover_url) AS cover_url,
                 b.description, b.page_count, b.language,
                 ub.id          AS user_book_id,
                 ub.status,
@@ -176,7 +177,8 @@ class BookModel {
         $sql = '
             SELECT
                 b.id, b.isbn, b.title, b.author,
-                b.publisher, b.published_year, b.cover_url,
+                b.publisher, b.published_year,
+                COALESCE(ub.custom_cover_url, b.cover_url) AS cover_url,
                 b.page_count, b.language,
                 ub.id          AS user_book_id,
                 ub.status,
@@ -203,7 +205,8 @@ class BookModel {
         $sql = '
             SELECT
                 b.id, b.isbn, b.title, b.author,
-                b.publisher, b.published_year, b.cover_url,
+                b.publisher, b.published_year,
+                COALESCE(ub.custom_cover_url, b.cover_url) AS cover_url,
                 b.page_count, b.language,
                 ub.id AS user_book_id,
                 ub.status, ub.shelf_id, ub.is_wishlist
@@ -235,7 +238,8 @@ class BookModel {
         $stmt = $this->db->prepare('
             SELECT
                 b.id, b.isbn, b.title, b.author,
-                b.publisher, b.published_year, b.cover_url,
+                b.publisher, b.published_year,
+                COALESCE(ub.custom_cover_url, b.cover_url) AS cover_url,
                 b.description, b.page_count, b.language,
                 ub.id          AS user_book_id,
                 ub.status,
@@ -254,11 +258,26 @@ class BookModel {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /** Opera sul catalogo globale (books.id), non su user_books. */
     public function updateCoverUrl(int $bookId, ?string $url): bool {
         $stmt = $this->db->prepare('UPDATE books SET cover_url = ? WHERE id = ?');
         $stmt->execute([$url, $bookId]);
         return $stmt->rowCount() > 0;
+    }
+
+    // Override della cover a livello di singolo user_book
+    public function updateUserCoverUrl(int $userId, int $userBookId, ?string $url): bool {
+        $stmt = $this->db->prepare(
+            'UPDATE user_books SET custom_cover_url = ? WHERE id = ? AND user_id = ?'
+        );
+        $stmt->execute([$url, $userBookId, $userId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    /** Riga grezza di user_books (usata per leggere custom_cover_url prima di sovrascriverlo). */
+    public function getUserBookRaw(int $userBookId): ?array {
+        $stmt = $this->db->prepare('SELECT * FROM user_books WHERE id = ?');
+        $stmt->execute([$userBookId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     /** Traduce l'id di user_books nell'id del libro nel catalogo globale. */

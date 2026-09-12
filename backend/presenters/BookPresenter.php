@@ -272,20 +272,16 @@ class BookPresenter {
         if (!in_array($mime, $allowed)) respondError('Formato non supportato');
         if ($file['size'] > 5 * 1024 * 1024) respondError('File troppo grande (max 5MB)');
 
-        $bookId = $this->bookModel->getBookIdFromUserBook($userBookId);
-        if (!$bookId) respondError('Libro non trovato', 404);
-
-        // Elimina vecchia copertina da Cloudinary se esiste
-        $current = $this->bookModel->findById($bookId);
-        if (!empty($current['cover_url']) && str_contains($current['cover_url'], 'cloudinary.com')) {
-            $publicId = pathinfo(parse_url($current['cover_url'], PHP_URL_PATH), PATHINFO_FILENAME);
+        $userBook = $this->bookModel->getUserBookRaw($userBookId);
+        if (!empty($userBook['custom_cover_url']) && str_contains($userBook['custom_cover_url'], 'cloudinary.com')) {
+            $publicId = pathinfo(parse_url($userBook['custom_cover_url'], PHP_URL_PATH), PATHINFO_FILENAME);
             $this->_cloudinaryDelete('sageshelf/covers/' . $publicId);
         }
 
         $url = $this->_cloudinaryUpload($file['tmp_name'], 'sageshelf/covers');
         if (!$url) respondError('Errore caricamento su Cloudinary');
 
-        $this->bookModel->updateCoverUrl($bookId, $url);
+        $this->bookModel->updateUserCoverUrl($userId, $userBookId, $url);
         return ['cover_url' => $url];
     }
 
@@ -395,23 +391,23 @@ class BookPresenter {
             );
         }
         if (array_key_exists('cover_url', $body)) {
-            $bookId = $this->bookModel->getBookIdFromUserBook($id);
-            if ($bookId) {
-                // Se si sta rimuovendo la copertina, elimina il file locale se esiste
-                if (empty($body['cover_url'])) {
-                    $current = $this->bookModel->findById($bookId);
-                    if (!empty($current['cover_url'])) {
-                        $localPrefix = '/bookshelf/frontend/assets/covers/';
-                        if (str_starts_with($current['cover_url'], $localPrefix)) {
-                            $filePath = $_SERVER['DOCUMENT_ROOT'] . $localPrefix
-                                . basename($current['cover_url']);
-                            $filePath = str_replace('/', DIRECTORY_SEPARATOR, $filePath);
-                            if (file_exists($filePath)) @unlink($filePath);
-                        }
+            // Override per-utente
+            if (empty($body['cover_url'])) {
+                $userBook = $this->bookModel->getUserBookRaw($id);
+                if (!empty($userBook['custom_cover_url'])) {
+                    $localPrefix = '/bookshelf/frontend/assets/covers/';
+                    if (str_starts_with($userBook['custom_cover_url'], $localPrefix)) {
+                        $filePath = $_SERVER['DOCUMENT_ROOT'] . $localPrefix
+                            . basename($userBook['custom_cover_url']);
+                        $filePath = str_replace('/', DIRECTORY_SEPARATOR, $filePath);
+                        if (file_exists($filePath)) @unlink($filePath);
+                    } elseif (str_contains($userBook['custom_cover_url'], 'cloudinary.com')) {
+                        $publicId = pathinfo(parse_url($userBook['custom_cover_url'], PHP_URL_PATH), PATHINFO_FILENAME);
+                        $this->_cloudinaryDelete('sageshelf/covers/' . $publicId);
                     }
                 }
-                $this->bookModel->updateCoverUrl($bookId, $body['cover_url'] ?: null);
             }
+            $this->bookModel->updateUserCoverUrl($userId, $id, $body['cover_url'] ?: null);
         }
         return ['updated' => true];
     }

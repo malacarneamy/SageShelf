@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS user_books (
     is_wishlist    TINYINT(1) NOT NULL DEFAULT 0,
     status         ENUM('want_to_read','reading','read') DEFAULT 'want_to_read',
     shelf_position INT        NOT NULL DEFAULT 0,
+    custom_cover_url VARCHAR(512) NULL,
     added_at       DATETIME   DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_user_book (user_id, book_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -105,9 +106,6 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     all_sort_by        VARCHAR(20) NOT NULL DEFAULT 'added_desc',
     all_shelf_position INT         NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Migrazione (se il database esiste già):
--- ALTER TABLE user_preferences ADD COLUMN all_shelf_position INT NOT NULL DEFAULT 0;
 
 -- ── indici ────────────────────────────────────────────────────
 CREATE INDEX idx_user_books_user     ON user_books(user_id);
