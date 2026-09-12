@@ -1329,9 +1329,7 @@ class AppView extends BaseView {
                 attemptCount++;
                 if (outcome.code) { onCode(outcome.code); return; }
                 if (outcome.error) console.error('Scan attempt error:', outcome.error);
-                setStatus(attemptCount <= 2
-                    ? 'Rilevazione in corso…'
-                    : `Rilevazione in corso… (tentativo ${attemptCount}${outcome.error ? ` — ${outcome.error.message}` : ''})`);
+                setStatus('Rilevazione in corso…');
                 busy = false;
             };
 
