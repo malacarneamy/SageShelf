@@ -129,6 +129,67 @@ class AuthPresenter {
         return ['updated' => true];
     }
 
+    /**
+     * Step 1 del cambio email: invia un codice OTP alla NUOVA email, per
+     * verificare che l'utente ne abbia davvero accesso prima di sostituirla.
+     */
+    public function requestEmailChange(int $userId, array $body): array {
+        $newEmail = trim(strtolower($body['email'] ?? ''));
+
+        if (!filter_var($newEmail, FILTER_VALIDATE_EMAIL))
+            respondError('Email non valida');
+
+        $current = $this->model->findById($userId);
+        if ($current && strtolower($current['email']) === $newEmail)
+            respondError('È già la tua email attuale');
+
+        if ($this->model->findByEmail($newEmail))
+            respondError('Email già in uso da un altro account', 409);
+
+        if ($this->codes->wasRequestedRecently($newEmail))
+            respondError('Codice già inviato di recente, attendi prima di richiederne un altro.', 429);
+
+        $this->_generateAndSendCode(
+            $newEmail,
+            'Il tuo codice per cambiare email — SageShelf',
+            'Usa questo codice per confermare la tua nuova email su SageShelf'
+        );
+
+        return ['email' => $newEmail];
+    }
+
+    /**
+     * Step 2 del cambio email: verifica il codice ricevuto alla nuova email
+     * e, solo se corretto, sostituisce l'email dell'utente.
+     */
+    public function confirmEmailChange(int $userId, array $body): array {
+        $newEmail = trim(strtolower($body['email'] ?? ''));
+        $code     = trim($body['code'] ?? '');
+
+        if (!$newEmail || !$code)
+            respondError('Email e codice sono obbligatori');
+
+        $row = $this->codes->findLatestValidByEmail($newEmail);
+        if (!$row)
+            respondError('Codice scaduto o non trovato. Richiedine uno nuovo.', 401);
+
+        if ((int)$row['attempts'] >= LoginCodeModel::MAX_ATTEMPTS)
+            respondError('Troppi tentativi falliti. Richiedi un nuovo codice.', 429);
+
+        if (!password_verify($code, $row['code_hash'])) {
+            $this->codes->incrementAttempts((int)$row['id']);
+            respondError('Codice non valido.', 401);
+        }
+
+        if ($this->model->findByEmail($newEmail))
+            respondError('Email già in uso da un altro account', 409);
+
+        $this->codes->markUsed((int)$row['id']);
+        $this->model->updateEmail($userId, $newEmail);
+
+        return ['email' => $newEmail];
+    }
+
     public function deleteAccount(int $userId): array {
         $this->model->delete($userId);
         session_destroy();
@@ -170,7 +231,11 @@ class AuthPresenter {
 
     // ── Interni ────────────────────────────────────────────────
 
-    private function _generateAndSendCode(string $email): void {
+    private function _generateAndSendCode(
+        string $email,
+        string $subject = 'Il tuo codice di accesso SageShelf',
+        string $intro = 'Il tuo codice di accesso è'
+    ): void {
         $code     = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $codeHash = password_hash($code, PASSWORD_DEFAULT);
 
@@ -178,8 +243,8 @@ class AuthPresenter {
 
         $sent = sendEmail(
             $email,
-            'Il tuo codice di accesso SageShelf',
-            "Il tuo codice di accesso è: {$code}\n\nScade tra " . LoginCodeModel::EXPIRY_MINUTES . " minuti.\nSe non hai richiesto questo codice, ignora questa email."
+            $subject,
+            "{$intro}: {$code}\n\nScade tra " . LoginCodeModel::EXPIRY_MINUTES . " minuti.\nSe non hai richiesto questo codice, ignora questa email."
         );
 
         if (!$sent) respondError('Impossibile inviare l\'email. Riprova più tardi.', 500);

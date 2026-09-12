@@ -56,6 +56,8 @@ class ApiModel extends BaseModel {
 
     // ── Profilo utente ────────────────────────────────────
     updateUsername(data)     { return this._put('/auth/username', data); }
+    requestEmailChange(email) { return this._post('/auth/email/code', { email }); }
+    confirmEmailChange(email, code) { return this._post('/auth/email/confirm', { email, code }); }
     deleteAccount()          { return this._post('/auth/account/delete'); }
     uploadAvatar(formData) {
         return fetch(`/backend/views/api.php/auth/avatar`, {

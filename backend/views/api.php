@@ -38,6 +38,10 @@ try {
                 $method === 'POST' && $action === 'logout' => $p->logout(),
                 $method === 'GET'  && $action === 'me' => $p->me(),
                 $method === 'PUT'  && $action === 'username' => $p->updateUsername(requireAuth(), $body),
+                $method === 'POST' && $action === 'email' && $sub === 'code' =>
+                    $p->requestEmailChange(requireAuth(), $body),
+                $method === 'POST' && $action === 'email' && $sub === 'confirm' =>
+                    $p->confirmEmailChange(requireAuth(), $body),
                 $method === 'POST' && $action === 'account' && $sub === 'delete' =>
                     $p->deleteAccount(requireAuth()),
                 $method === 'POST'   && $action === 'avatar' => $p->uploadAvatar(requireAuth(), $_FILES),

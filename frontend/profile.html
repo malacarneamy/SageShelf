@@ -53,7 +53,7 @@
         </label>
         </div>
     </div>
-    <p class="profile-version">made by Godzillalilla · version: 1.0.10</p>
+    <p class="profile-version">made by Godzillalilla · version: 1.0.11</p>
 
     <!-- Card unica -->
     <div class="profile-card">
@@ -62,19 +62,45 @@
         <div class="profile-field">
         <label class="profile-field-label">Username</label>
         <div class="profile-field-row">
-            <input type="text" id="profile-username" class="profile-field-input" placeholder="Il tuo nome">
-            <button id="profile-save-username" class="btn-confirm profile-field-btn hidden">Salva</button>
+            <input type="text" id="profile-username" class="profile-field-input" placeholder="Il tuo nome" readonly>
+            <button id="profile-edit-username-btn" class="btn-cancel profile-field-btn">Cambia</button>
+        </div>
+
+        <!-- Riga di modifica (nascosta di default) -->
+        <div id="profile-username-new-wrap" class="profile-field-row hidden" style="margin-top:.6rem">
+            <input type="text" id="profile-username-new" class="profile-field-input" placeholder="Nuovo username">
+            <button id="profile-save-username" class="btn-confirm profile-field-btn">Salva</button>
+            <button id="profile-username-cancel" class="btn-cancel profile-field-btn">Annulla</button>
         </div>
         </div>
 
         <hr class="profile-divider">
 
-        <!-- Email: sola visualizzazione — l'accesso avviene via codice OTP
-             inviato a questo indirizzo, quindi non è modificabile da qui -->
+        <!-- Email: modificabile solo previa verifica OTP sulla NUOVA email,
+             per lo stesso motivo per cui si accede via codice e non via
+             password — impedisce che chiunque acceda alla sessione possa
+             dirottare l'account su un'email che non controlla davvero -->
         <div class="profile-field">
         <label class="profile-field-label">Email</label>
         <div class="profile-field-row">
             <input type="email" id="profile-email" class="profile-field-input" readonly>
+            <button id="profile-edit-email-btn" class="btn-cancel profile-field-btn">Cambia</button>
+        </div>
+
+        <!-- Step 1: inserimento nuova email -->
+        <div id="profile-email-new-wrap" class="profile-field-row hidden" style="margin-top:.6rem">
+            <input type="email" id="profile-email-new" class="profile-field-input" placeholder="Nuova email">
+            <button id="profile-email-send-code" class="btn-confirm profile-field-btn">Invia codice</button>
+            <button id="profile-email-cancel" class="btn-cancel profile-field-btn">Annulla</button>
+        </div>
+
+        <!-- Step 2: verifica codice ricevuto sulla nuova email -->
+        <div id="profile-email-code-wrap" class="profile-field-row hidden" style="margin-top:.6rem">
+            <p class="auth-code-hint" style="width:100%">Codice inviato a <strong id="profile-email-code-sent-to"></strong></p>
+            <input type="text" id="profile-email-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                   class="profile-field-input" placeholder="123456">
+            <button id="profile-email-confirm-code" class="btn-confirm profile-field-btn">Conferma</button>
+            <button id="profile-email-cancel-code" class="btn-cancel profile-field-btn">Annulla</button>
         </div>
         </div>
 

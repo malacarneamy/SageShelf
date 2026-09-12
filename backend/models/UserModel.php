@@ -47,6 +47,12 @@ class UserModel {
         return $stmt->rowCount() > 0;
     }
 
+    public function updateEmail(int $id, string $email): bool {
+        $stmt = $this->db->prepare('UPDATE users SET email = ? WHERE id = ?');
+        $stmt->execute([$email, $id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function updateAvatar(int $id, ?string $url): bool {
         $stmt = $this->db->prepare('UPDATE users SET avatar_url = ? WHERE id = ?');
         $stmt->execute([$url, $id]);

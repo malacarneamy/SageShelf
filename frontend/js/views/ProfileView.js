@@ -64,33 +64,94 @@ class ProfileView extends BaseView {
     }
 
     _bindEvents() {
-        // Mostra pulsante salva username quando modificato
-        const usernameInput = document.getElementById('profile-username');
-        const saveUsernameBtn = document.getElementById('profile-save-username');
-        usernameInput.addEventListener('input', () => {
-            saveUsernameBtn.classList.toggle('hidden', usernameInput.value.trim() === this._user.username);
+        // Cambio username — stesso schema del cambio email (campo di sola
+        // lettura + "Cambia" che apre una riga di modifica sotto), ma senza
+        // verifica OTP: l'username non serve a identificare l'account via
+        // login, quindi non c'è lo stesso rischio di sicurezza dell'email.
+        const editUsernameBtn = document.getElementById('profile-edit-username-btn');
+        const usernameNewWrap  = document.getElementById('profile-username-new-wrap');
+        const usernameNewInput = document.getElementById('profile-username-new');
+        const saveUsernameBtn  = document.getElementById('profile-save-username');
+
+        const resetUsernameFlow = () => {
+            usernameNewWrap.classList.add('hidden');
+            usernameNewInput.value = '';
+        };
+
+        editUsernameBtn.addEventListener('click', () => {
+            usernameNewInput.value = this._user.username || '';
+            usernameNewWrap.classList.remove('hidden');
+            usernameNewInput.focus();
+            usernameNewInput.select();
         });
 
-        // Salva username
+        document.getElementById('profile-username-cancel').addEventListener('click', resetUsernameFlow);
+
         saveUsernameBtn.addEventListener('click', async () => {
-            const username = usernameInput.value.trim();
+            const username = usernameNewInput.value.trim();
             if (!username) { this.showError('Inserisci un username'); return; }
             try {
                 await api.updateUsername({ username });
                 this._user.username = username;
+                document.getElementById('profile-username').value = username;
                 document.getElementById('nav-username').title = username;
-                saveUsernameBtn.classList.add('hidden');
+                resetUsernameFlow();
                 this.showSuccess('Username aggiornato!');
             } catch (e) { this.showError(e.message); }
         });
 
-        // Nota: l'email non è più modificabile dal profilo — l'accesso
-        // avviene via codice OTP inviato a quell'indirizzo, quindi cambiarla
-        // senza riverificarne il possesso sarebbe un rischio di sicurezza.
-        // Il campo #profile-email resta di sola visualizzazione (valorizzato
-        // in init()); se l'HTML ha ancora pulsanti/campi per modificarla
-        // (#profile-save-email, #profile-email-password-wrap,
-        // #profile-email-password) andrebbero rimossi dalla pagina.
+        // Cambio email — in due step, stesso principio dell'OTP di login:
+        // il possesso della nuova email va riverificato, altrimenti chi ha
+        // accesso alla sessione potrebbe dirottare l'account su un'email
+        // che non controlla davvero.
+        const editBtn      = document.getElementById('profile-edit-email-btn');
+        const newWrap       = document.getElementById('profile-email-new-wrap');
+        const newInput       = document.getElementById('profile-email-new');
+        const codeWrap       = document.getElementById('profile-email-code-wrap');
+        const codeInput      = document.getElementById('profile-email-code');
+        const codeSentToEl   = document.getElementById('profile-email-code-sent-to');
+
+        const resetEmailFlow = () => {
+            newWrap.classList.add('hidden');
+            codeWrap.classList.add('hidden');
+            newInput.value  = '';
+            codeInput.value = '';
+        };
+
+        editBtn.addEventListener('click', () => {
+            resetEmailFlow();
+            newWrap.classList.remove('hidden');
+            newInput.focus();
+        });
+
+        document.getElementById('profile-email-cancel').addEventListener('click', resetEmailFlow);
+        document.getElementById('profile-email-cancel-code').addEventListener('click', resetEmailFlow);
+
+        document.getElementById('profile-email-send-code').addEventListener('click', async () => {
+            const email = newInput.value.trim();
+            if (!email) { this.showError('Inserisci la nuova email'); return; }
+            try {
+                await api.requestEmailChange(email);
+                this._pendingNewEmail = email;
+                codeSentToEl.textContent = email;
+                newWrap.classList.add('hidden');
+                codeWrap.classList.remove('hidden');
+                codeInput.focus();
+                this.showSuccess('Codice inviato! Controlla la nuova email.');
+            } catch (e) { this.showError(e.message); }
+        });
+
+        document.getElementById('profile-email-confirm-code').addEventListener('click', async () => {
+            const code = codeInput.value.trim();
+            if (!code) { this.showError('Inserisci il codice ricevuto'); return; }
+            try {
+                await api.confirmEmailChange(this._pendingNewEmail, code);
+                document.getElementById('profile-email').value = this._pendingNewEmail;
+                this._user.email = this._pendingNewEmail;
+                resetEmailFlow();
+                this.showSuccess('Email aggiornata!');
+            } catch (e) { this.showError(e.message); }
+        });
 
         // Elimina account — non serve più conferma con password, la sessione
         // stessa è la prova di identità.
