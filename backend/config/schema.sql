@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS user_books (
     shelf_position INT        NOT NULL DEFAULT 0,
     custom_cover_url VARCHAR(512) NULL,
     added_at       DATETIME   DEFAULT CURRENT_TIMESTAMP,
+    updated_at     DATETIME   DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_user_book (user_id, book_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

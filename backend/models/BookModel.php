@@ -61,6 +61,7 @@ class BookModel {
             JOIN  books   b ON b.id  = ub.book_id
             LEFT JOIN shelves s ON s.id  = ub.shelf_id
             LEFT JOIN reviews r ON r.book_id = b.id AND r.user_id = ub.user_id
+            LEFT JOIN book_details bd ON bd.user_book_id = ub.id
             WHERE ub.user_id = ?';
 
         $params = [$userId];
@@ -85,6 +86,7 @@ class BookModel {
             'author'      => 'b.author ASC',
             'added_asc'   => 'ub.added_at ASC',
             'added_desc'  => 'ub.added_at DESC',
+            'modified_desc' => 'GREATEST(ub.updated_at, COALESCE(r.updated_at, ub.updated_at), COALESCE(bd.updated_at, ub.updated_at)) DESC',
             'custom'      => 'ub.shelf_position ASC',
         ];
         $order = $orderMap[$sortBy] ?? 'ub.added_at DESC';
@@ -264,7 +266,6 @@ class BookModel {
         return $stmt->rowCount() > 0;
     }
 
-    // Override della cover a livello di singolo user_book
     public function updateUserCoverUrl(int $userId, int $userBookId, ?string $url): bool {
         $stmt = $this->db->prepare(
             'UPDATE user_books SET custom_cover_url = ? WHERE id = ? AND user_id = ?'

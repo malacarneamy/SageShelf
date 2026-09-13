@@ -52,7 +52,7 @@ class ShelfPresenter {
 
     public function updateSort(int $userId, int $shelfId, array $body): array {
         $sortBy  = $body['sort_by'] ?? 'added_desc';
-        $allowed = ['title', 'author', 'added_asc', 'added_desc', 'custom'];
+        $allowed = ['title', 'author', 'added_asc', 'added_desc', 'modified_desc', 'custom'];
         if (!in_array($sortBy, $allowed)) respondError('Criterio non valido');
         $this->model->updateSortBy($shelfId, $userId, $sortBy);
         return ['updated' => true];
@@ -60,7 +60,7 @@ class ShelfPresenter {
 
     public function updateAllSort(int $userId, array $body): array {
         $sortBy  = $body['sort_by'] ?? 'added_desc';
-        $allowed = ['title', 'author', 'added_asc', 'added_desc', 'custom'];
+        $allowed = ['title', 'author', 'added_asc', 'added_desc', 'modified_desc', 'custom'];
         if (!in_array($sortBy, $allowed)) respondError('Criterio non valido');
         (new UserModel())->updateAllSortBy($userId, $sortBy);
         return ['updated' => true];

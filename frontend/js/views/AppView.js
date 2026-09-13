@@ -1817,6 +1817,7 @@ class AppView extends BaseView {
         document.getElementById('sort-by-author')?.addEventListener('click', () => this._sortBooks('author'));
         document.getElementById('sort-by-added-asc')?.addEventListener('click',  () => this._sortBooks('added_asc'));
         document.getElementById('sort-by-added-desc')?.addEventListener('click', () => this._sortBooks('added_desc'));
+        document.getElementById('sort-by-modified')?.addEventListener('click', () => this._sortBooks('modified_desc'));
         document.getElementById('reorder-cancel-btn')?.addEventListener('click', () => 
             this._closeModal('modal-reorder'));
 
@@ -1897,7 +1898,8 @@ class AppView extends BaseView {
         this._closeModal('modal-reorder');
         const labels = {
             title: 'titolo', author: 'autore',
-            added_asc: 'prima aggiunta', added_desc: 'ultima aggiunta'
+            added_asc: 'prima aggiunta', added_desc: 'ultima aggiunta',
+            modified_desc: 'ultima modifica'
         };
         this.showSuccess(`Scaffale ordinato per ${labels[by] ?? by}!`);
         this._loadCurrentView();
