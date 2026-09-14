@@ -10,7 +10,7 @@ class UserModel {
 
     public function findByEmail(string $email): ?array {
         $stmt = $this->db->prepare(
-            'SELECT id, username, email, avatar_url, created_at FROM users WHERE email = ?'
+            'SELECT id, username, email, avatar_url, last_seen_at, created_at FROM users WHERE email = ?'
         );
         $stmt->execute([$email]);
         return $stmt->fetch() ?: null;
@@ -18,7 +18,7 @@ class UserModel {
 
     public function findById(int $id): ?array {
         $stmt = $this->db->prepare(
-            'SELECT id, username, email, avatar_url, created_at FROM users WHERE id = ?'
+            'SELECT id, username, email, avatar_url, last_seen_at, created_at FROM users WHERE id = ?'
         );
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
@@ -26,7 +26,7 @@ class UserModel {
 
     public function findByUsername(string $username): ?array {
         $stmt = $this->db->prepare(
-            'SELECT id, username, email, avatar_url, created_at FROM users WHERE username = ?'
+            'SELECT id, username, email, avatar_url, last_seen_at, created_at FROM users WHERE username = ?'
         );
         $stmt->execute([$username]);
         return $stmt->fetch() ?: null;
@@ -63,6 +63,14 @@ class UserModel {
         $stmt = $this->db->prepare('DELETE FROM users WHERE id = ?');
         $stmt->execute([$id]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function touchLastSeen(int $id): void {
+        $stmt = $this->db->prepare(
+            'UPDATE users SET last_seen_at = NOW()
+             WHERE id = ? AND (last_seen_at IS NULL OR last_seen_at < NOW() - INTERVAL 1 HOUR)'
+        );
+        $stmt->execute([$id]);
     }
 
     public function getAllSortBy(int $userId): string {

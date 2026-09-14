@@ -100,6 +100,7 @@ function getBody(): array {
 function requireAuth(): int {
     if (!empty($_SESSION['user_id'])) {
         _refreshSessionCookie();
+        (new UserModel())->touchLastSeen((int)$_SESSION['user_id']);
         return (int)$_SESSION['user_id'];
     }
     
@@ -125,6 +126,7 @@ function requireAuth(): int {
                     'samesite' => 'Lax',
                 ]);
 
+                (new UserModel())->touchLastSeen($userId);
                 return $userId;
             }
         }

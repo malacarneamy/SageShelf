@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     username        VARCHAR(50)  NOT NULL UNIQUE,
     email           VARCHAR(150) NOT NULL UNIQUE,
     avatar_url      VARCHAR(500) NULL,
+    last_seen_at    DATETIME     NULL,
     created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -101,6 +102,16 @@ CREATE TABLE IF NOT EXISTS book_details (
     UNIQUE KEY uq_user_book_detail (user_book_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── remember_tokens ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS remember_tokens (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT         NOT NULL,
+    token_hash  VARCHAR(64) NOT NULL,
+    expires_at  DATETIME    NOT NULL,
+    created_at  DATETIME    DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_token_hash (token_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── user_preferences ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS user_preferences (
     user_id            INT         NOT NULL PRIMARY KEY,
@@ -118,3 +129,5 @@ CREATE INDEX idx_reviews_book        ON reviews(book_id);
 CREATE INDEX idx_books_isbn          ON books(isbn);
 CREATE INDEX idx_login_codes_email  ON login_codes(email);
 CREATE INDEX idx_login_codes_expiry ON login_codes(expires_at);
+CREATE INDEX idx_remember_tokens_user    ON remember_tokens(user_id);
+CREATE INDEX idx_remember_tokens_expiry  ON remember_tokens(expires_at);
