@@ -52,7 +52,8 @@ define('MAIL_FROM',      env('MAIL_FROM') ?: 'no-reply@sageshelf.com');
 define('MAIL_FROM_NAME', env('MAIL_FROM_NAME') ?: 'SageShelf');
 
 // ── Session ─────────────────────────────────────────────────
-const SESSION_LIFETIME = 60 * 60 * 24 * 30; // 30 giorni in secondi
+const SESSION_LIFETIME  = 60 * 60 * 24 * 30; // 30 giorni in secondi
+const REMEMBER_COOKIE   = 'sageshelf_remember';
 
 // session.gc_maxlifetime deve essere allineato alla lifetime del cookie
 ini_set('session.gc_maxlifetime', (string)SESSION_LIFETIME);
@@ -97,8 +98,42 @@ function getBody(): array {
 }
 
 function requireAuth(): int {
-    if (empty($_SESSION['user_id'])) respondError('Unauthorized', 401);
+    if (!empty($_SESSION['user_id'])) {
+        _refreshSessionCookie();
+        return (int)$_SESSION['user_id'];
+    }
+    
+    if (!empty($_COOKIE[REMEMBER_COOKIE])) {
+        $rememberToken = $_COOKIE[REMEMBER_COOKIE];
+        $tokenModel    = new RememberTokenModel();
+        $userId        = $tokenModel->findValidUserId($rememberToken);
+        if ($userId) {
+            $user = (new UserModel())->findById($userId);
+            if ($user) {
+                $_SESSION['user_id']  = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                _refreshSessionCookie();
 
+                // Finestra scorrevole: ogni utilizzo rinnova la scadenza di
+                // altri LIFETIME_DAYS, sia lato DB che sul cookie del browser.
+                $tokenModel->touch($rememberToken);
+                setcookie(REMEMBER_COOKIE, $rememberToken, [
+                    'expires'  => time() + RememberTokenModel::LIFETIME_DAYS * 86400,
+                    'path'     => '/',
+                    'secure'   => true,
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
+
+                return $userId;
+            }
+        }
+    }
+
+    respondError('Unauthorized', 401);
+}
+
+function _refreshSessionCookie(): void {
     if (isset($_COOKIE[session_name()])) {
         setcookie(session_name(), $_COOKIE[session_name()], [
             'expires'  => time() + SESSION_LIFETIME,
@@ -108,8 +143,6 @@ function requireAuth(): int {
             'samesite' => 'Lax',
         ]);
     }
-
-    return (int)$_SESSION['user_id'];
 }
 
 // ── HTTP helper (cURL) ───────────────────────────────────────

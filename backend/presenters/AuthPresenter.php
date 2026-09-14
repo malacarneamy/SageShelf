@@ -101,10 +101,26 @@ class AuthPresenter {
         $_SESSION['username'] = $user['username'];
         session_regenerate_id(true); // previene session fixation dopo il login
 
+        $rememberToken = (new RememberTokenModel())->create((int)$user['id']);
+        setcookie(REMEMBER_COOKIE, $rememberToken, [
+            'expires'  => time() + RememberTokenModel::LIFETIME_DAYS * 86400,
+            'path'     => '/',
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+
         return ['user' => $user];
     }
 
     public function logout(): array {
+        if (!empty($_COOKIE[REMEMBER_COOKIE])) {
+            (new RememberTokenModel())->delete($_COOKIE[REMEMBER_COOKIE]);
+            setcookie(REMEMBER_COOKIE, '', [
+                'expires' => time() - 3600, 'path' => '/',
+                'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
+            ]);
+        }
         session_destroy();
         return ['message' => 'Disconnesso'];
     }
@@ -191,7 +207,14 @@ class AuthPresenter {
     }
 
     public function deleteAccount(int $userId): array {
+        (new RememberTokenModel())->deleteAllForUser($userId);
         $this->model->delete($userId);
+        if (!empty($_COOKIE[REMEMBER_COOKIE])) {
+            setcookie(REMEMBER_COOKIE, '', [
+                'expires' => time() - 3600, 'path' => '/',
+                'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
+            ]);
+        }
         session_destroy();
         return ['deleted' => true];
     }
