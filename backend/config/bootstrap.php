@@ -103,14 +103,17 @@ function requireAuth(): int {
         (new UserModel())->touchLastSeen((int)$_SESSION['user_id']);
         return (int)$_SESSION['user_id'];
     }
-    
     if (!empty($_COOKIE[REMEMBER_COOKIE])) {
         $rememberToken = $_COOKIE[REMEMBER_COOKIE];
         $tokenModel    = new RememberTokenModel();
         $userId        = $tokenModel->findValidUserId($rememberToken);
-        if ($userId) {
+        if (!$userId) {
+            error_log('[remember-me] cookie presente ma token non valido/scaduto su DB');
+        } else {
             $user = (new UserModel())->findById($userId);
-            if ($user) {
+            if (!$user) {
+                error_log("[remember-me] token valido ma utente $userId non trovato (account cancellato?)");
+            } else {
                 $_SESSION['user_id']  = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 _refreshSessionCookie();
@@ -130,6 +133,8 @@ function requireAuth(): int {
                 return $userId;
             }
         }
+    } else {
+        error_log('[remember-me] sessione vuota e nessun cookie ' . REMEMBER_COOKIE . ' ricevuto');
     }
 
     respondError('Unauthorized', 401);

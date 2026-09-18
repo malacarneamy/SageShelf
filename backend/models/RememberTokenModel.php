@@ -13,7 +13,7 @@ class RememberTokenModel {
     public function create(int $userId): string {
         $token     = bin2hex(random_bytes(32));
         $tokenHash = hash('sha256', $token);
-        $expiresAt = date('Y-m-d H:i:s', time() + self::LIFETIME_DAYS * 86400);
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + self::LIFETIME_DAYS * 86400);
 
         $stmt = $this->db->prepare(
             'INSERT INTO remember_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)'
@@ -26,7 +26,7 @@ class RememberTokenModel {
     public function findValidUserId(string $token): ?int {
         $tokenHash = hash('sha256', $token);
         $stmt = $this->db->prepare(
-            'SELECT user_id FROM remember_tokens WHERE token_hash = ? AND expires_at > NOW()'
+            'SELECT user_id FROM remember_tokens WHERE token_hash = ? AND expires_at > UTC_TIMESTAMP()'
         );
         $stmt->execute([$tokenHash]);
         $row = $stmt->fetch();
@@ -40,13 +40,9 @@ class RememberTokenModel {
         $stmt->execute([$tokenHash]);
     }
 
-    /** Rinnova la scadenza di un token valido ("finestra scorrevole"):
-     *  ogni utilizzo sposta avanti di LIFETIME_DAYS la scadenza, così un
-     *  utente attivo resta loggato indefinitamente e scade solo dopo
-     *  LIFETIME_DAYS di inattività continua. */
     public function touch(string $token): void {
         $tokenHash = hash('sha256', $token);
-        $expiresAt = date('Y-m-d H:i:s', time() + self::LIFETIME_DAYS * 86400);
+        $expiresAt = gmdate('Y-m-d H:i:s', time() + self::LIFETIME_DAYS * 86400);
         $stmt = $this->db->prepare(
             'UPDATE remember_tokens SET expires_at = ? WHERE token_hash = ?'
         );
